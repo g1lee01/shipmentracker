@@ -1,1 +1,70 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>선적 업무 보드</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="styles.css"><style>body,button,input,select,textarea{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif}</style></head><body><main><header><div><p>OVERSEAS SALES · SHIPPING DESK</p><h1>선적 업무 보드</h1></div><div class="header-right"><span id="clock"></span></div></header><section class="summary"><article><span>진행 중 선적</span><b id="activeCount">0</b><small>현재 처리 중인 건</small></article><article><span>오늘의 할 일</span><b id="todayCount">0</b><small>마감 기준</small></article><article><span>이번 주 출고</span><b id="dispatchCount">0</b><small>공장 출고 예정</small></article><article><span>이번 주 ETD</span><b id="etdCount">0</b><small>선적 예정</small></article></section><section class="dashboard"><article class="panel calendar"><div class="panel-head"><div><p>CALENDAR</p><h2 id="monthTitle"></h2></div><div><button id="prevMonth">‹</button><button id="nextMonth">›</button></div></div><div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div><div id="calendarGrid"></div></article><aside class="task-side"><article class="panel"><div class="panel-head"><div><p>TO DO</p><h2>오늘의 할 일</h2></div><button id="addTask">＋ 추가</button></div><div id="todayTasks" class="task-list"></div></article><article class="panel"><div class="panel-head"><div><p>UP NEXT</p><h2>다가오는 할 일</h2></div></div><div id="upcomingTasks" class="task-list"></div></article></aside></section><section class="shipments"><div class="section-head"><div><p>SHIPMENT TRACKER</p><h2>선적 진행 현황</h2></div><div class="shipment-tools"><select id="filter"><option value="all">전체 보기</option><option value="active">진행 중</option><option value="done">완료</option></select><button id="addShipment">＋ 새 선적건</button></div></div><div class="tracker-label"><span>선적 정보</span><span>주요 일정</span><span>핵심 진행 항목</span><span>진행률</span></div><div id="shipmentList"></div></section></main><dialog id="taskDialog"><form id="taskForm"><button class="close" type="button">×</button><h2>할 일 추가</h2><label>할 일<input name="title" required placeholder="예: 선적 서류 확인"></label><label>날짜<input name="date" type="date" required></label><label>색상<select name="color"><option value="pink">로즈</option><option value="blue">블루</option><option value="gold">골드</option></select></label><div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div></form></dialog><dialog id="shipmentDialog"><form id="shipmentForm"><button class="close" type="button">×</button><h2>새 선적건</h2><label>제품명<input name="product" required placeholder="예: NPK 15-15-15"></label><label>국가<input name="country" required placeholder="예: Philippines"></label><label>도착항<input name="port" required placeholder="예: Manila"></label><div class="form-row"><label>출고일<input name="dispatch" type="date"></label><label>ETD<input name="etd" type="date"></label><label>ETA<input name="eta" type="date"></label></div><div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div></form></dialog><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>선적 업무 보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>body,button,input,select,textarea{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif}</style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><p>해외영업 · 선적 관리</p><h1>선적 업무 보드</h1></div>
+      <div class="header-right"><span id="clock"></span></div>
+    </header>
+
+    <section class="summary">
+      <article><span>진행 중 선적</span><b id="activeCount">0</b><small>현재 처리 중인 건</small></article>
+      <article><span>오늘의 할 일</span><b id="todayCount">0</b><small>마감 기준</small></article>
+      <article><span>이번 주 출고</span><b id="dispatchCount">0</b><small>공장 출고 예정</small></article>
+      <article><span>이번 주 ETD</span><b id="etdCount">0</b><small>선적 예정</small></article>
+    </section>
+
+    <section class="dashboard">
+      <article class="panel calendar">
+        <div class="panel-head"><div><p>일정 관리</p><h2 id="monthTitle"></h2></div><div><button id="prevMonth">‹</button><button id="nextMonth">›</button></div></div>
+        <div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div id="calendarGrid"></div>
+      </article>
+      <aside class="task-side">
+        <article class="panel"><div class="panel-head"><div><p>오늘의 업무</p><h2>오늘의 할 일</h2></div><button id="addTask">＋ 추가</button></div><div id="todayTasks" class="task-list"></div></article>
+        <article class="panel"><div class="panel-head"><div><p>예정 업무</p><h2>다가오는 할 일</h2></div></div><div id="upcomingTasks" class="task-list"></div></article>
+      </aside>
+    </section>
+
+    <section class="shipments">
+      <div class="section-head"><div><p>선적 관리</p><h2>선적 진행 현황</h2></div><div class="shipment-tools"><select id="filter"><option value="all">전체 보기</option><option value="active">진행 중</option><option value="done">완료</option></select><button id="addShipment">＋ 새 선적건</button></div></div>
+      <div class="tracker-label"><span>선적 정보</span><span>주요 일정</span><span>핵심 진행 항목</span><span>진행률</span></div>
+      <div id="shipmentList"></div>
+    </section>
+  </main>
+
+  <dialog id="taskDialog">
+    <form id="taskForm">
+      <button class="close" type="button">×</button>
+      <h2>할 일 추가</h2>
+      <label>할 일<input name="title" required placeholder="예: 선적 서류 확인"></label>
+      <label>날짜<input name="date" type="date" required></label>
+      <label>색상<select name="color"><option value="pink">로즈</option><option value="blue">블루</option><option value="gold">골드</option></select></label>
+      <div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="shipmentDialog">
+    <form id="shipmentForm">
+      <button class="close" type="button">×</button>
+      <h2>새 선적건</h2>
+      <label>제품명<input name="product" required placeholder="예: NPK 15-15-15"></label>
+      <label>국가<input name="country" required placeholder="예: Philippines"></label>
+      <label>도착항<input name="port" required placeholder="예: Manila"></label>
+      <div class="form-row"><label>출고일<input name="dispatch" type="date"></label><label>ETD<input name="etd" type="date"></label><label>ETA<input name="eta" type="date"></label></div>
+      <div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div>
+    </form>
+  </dialog>
+  <script src="app.js"></script>
+</body>
+</html>
