@@ -1,7 +1,7 @@
 /* Core interface enhancements. Kept independent from cloud sync so they work
    even if the Supabase CDN is temporarily unavailable. */
 (() => {
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}#calendarGrid,.week{grid-template-columns:.9fr repeat(5,minmax(0,1fr)) .9fr!important}</style>');
 
   const todayForInput = () => {
     const now = new Date();
@@ -20,6 +20,34 @@
   };
 
   addShipmentDisplayField();
+
+  const localDateForCalendar = date => {
+    const copy = new Date(date);
+    copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
+    return copy.toISOString().slice(0, 10);
+  };
+  const lastBusinessDay = (year, monthIndex) => {
+    const date = new Date(year, monthIndex + 1, 0);
+    while (date.getDay() === 0 || date.getDay() === 6 || (typeof koreanHolidays !== 'undefined' && koreanHolidays[localDateForCalendar(date)])) {
+      date.setDate(date.getDate() - 1);
+    }
+    return localDateForCalendar(date);
+  };
+  const placeMonthClosingOnBusinessDay = () => {
+    if (typeof month === 'undefined' || typeof db === 'undefined') return;
+    document.querySelectorAll('#calendarGrid .month-end').forEach(day => {
+      day.classList.remove('month-end');
+      delete day.dataset.monthSummary;
+    });
+    const closingDate = lastBusinessDay(month.getFullYear(), month.getMonth());
+    const closingDay = document.querySelector(`#calendarGrid .day[data-date="${closingDate}"]`);
+    if (!closingDay) return;
+    const yearMonth = closingDate.slice(0, 7);
+    const count = db.ships.filter(ship => ship.etd?.startsWith(yearMonth)).length;
+    closingDay.classList.add('month-end');
+    closingDay.dataset.monthSummary = `마감 (${count}건)`;
+  };
+  setInterval(placeMonthClosingOnBusinessDay, 120);
 
   // Only new tasks receive today as a starting date. Dates picked from the
   // calendar and dates on existing tasks remain exactly as they are.
