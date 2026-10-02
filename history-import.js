@@ -18,6 +18,10 @@
       const date = XLSX.SSF.parse_date_code(value);
       if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
     }
+    if (/^\d{4,5}$/.test(String(value)) && window.XLSX?.SSF) {
+      const date = XLSX.SSF.parse_date_code(Number(value));
+      if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+    }
     const match = String(value).match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
     if (match) return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
     const reverse = String(value).match(/(\d{1,2})[-./](\d{1,2})[-./](\d{2,4})/);
@@ -33,6 +37,17 @@
     String(position), `번호${position}`, `번호 ${position}`,
     `숫자${position}`, `숫자 ${position}`, `number${position}`, `number ${position}`,
   ]);
+  const firstSheetRows = sheet => {
+    const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+    const headerIndex = matrix.findIndex(row => row.some(value =>
+      ['품목', '제품명', '제품', 'product', 'product name'].some(name => normal(value) === normal(name))
+    ));
+    if (headerIndex < 0) return [];
+    const headers = matrix[headerIndex];
+    return matrix.slice(headerIndex + 1).map(values => Object.fromEntries(
+      headers.map((header, index) => [header, values[index] ?? ''])
+    )).filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
+  };
   const detailFields = row => {
     const ipManagementNumber = frontNumberValue(row, 5, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
     return {
@@ -73,7 +88,7 @@
     try {
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+      const rows = firstSheetRows(firstSheet);
       const ships = rows.map(row => {
         const product = rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']);
         if (!product) return null;
@@ -93,7 +108,7 @@
           payment: rowValue(row, ['결제 조건', '결제조건', 'payment', 'payment term']),
           advancePaymentNotRequired: isNotApplicable(advancePaymentHandling),
           insuranceNotRequired: isNotApplicable(ipManagementNumber),
-          dispatch: dateValue(rowValue(row, ['출고일', '출고', 'dispatch', 'dispatch date'])),
+          dispatch: dateValue(rowValue(row, ['공장출하일', '출고일', '출고', 'dispatch', 'dispatch date'])),
           etd: dateValue(rowValue(row, ['etd', '선적일', '선적 예정일'])),
           eta: dateValue(rowValue(row, ['eta', '도착 예정일'])),
           displayBy: rowValue(row, ['일정 표기', 'display by']) === '도착항으로 표시' ? 'port' : 'country',
