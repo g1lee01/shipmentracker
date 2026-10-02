@@ -384,5 +384,33 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     updateLabel();
   };
   setupShipmentMonthControl();
+
+  // New entries start from today, so every native date picker opens in the current month/year.
+  // Existing tasks and shipments keep their saved dates untouched.
+  const todayForInput = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 10);
+  };
+  const applyNewEntryDateDefaults = () => {
+    const today = todayForInput();
+    const taskDialog = document.querySelector('#taskDialog');
+    const taskForm = document.querySelector('#taskForm');
+    if (taskDialog?.open && taskForm && !taskForm.dataset.id && !taskForm.elements.date?.value) {
+      taskForm.elements.date.value = today;
+    }
+    const shipmentDialog = document.querySelector('#shipmentDialog');
+    const shipmentForm = document.querySelector('#shipmentForm');
+    if (shipmentDialog?.open && shipmentForm && !shipmentForm.dataset.editId) {
+      ['dispatch', 'etd', 'eta'].forEach(name => {
+        if (shipmentForm.elements[name] && !shipmentForm.elements[name].value) shipmentForm.elements[name].value = today;
+      });
+    }
+  };
+  document.addEventListener('click', event => {
+    if (!event.target.closest('#addTask, #addShipment, [data-new-shipment-menu]')) return;
+    setTimeout(applyNewEntryDateDefaults, 0);
+  }, true);
+
   addCloudInterface();
 })();
