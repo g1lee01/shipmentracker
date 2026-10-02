@@ -29,7 +29,7 @@
     const endDateField = form.elements.endDate?.closest('label');
     (endDateField || form.elements.date?.closest('label'))?.insertAdjacentElement('afterend', timeField);
     const reminderField = document.createElement('label');
-    reminderField.innerHTML = '리마인더<select name="reminder"><option value="">알림 안 함</option><option value="5">5분 전</option><option value="15">15분 전</option><option value="30">30분 전</option><option value="60">1시간 전</option><option value="120">2시간 전</option><option value="1440">1일 전</option><option value="4320">3일 전</option></select>';
+    reminderField.innerHTML = '리마인더<select name="reminder"><option value="">알림 안 함</option><option value="0">정시</option><option value="5">5분 전</option><option value="15">15분 전</option><option value="30">30분 전</option><option value="60">1시간 전</option><option value="120">2시간 전</option><option value="1440">1일 전</option><option value="4320">3일 전</option></select>';
     const repeatField = form.elements.repeat?.closest('label');
     (repeatField || timeField).insertAdjacentElement('afterend', reminderField);
   };
@@ -67,7 +67,7 @@
     form?.querySelectorAll('[data-color-value]').forEach(chip => chip.classList.toggle('selected', chip.dataset.colorValue === selected));
   };
   arrangeTaskFields();
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="repeat"]){grid-column:1!important;min-width:0}#taskForm label:has([name="reminder"]),#taskForm label:has([name="status"]){grid-column:2!important;min-width:0}#taskForm label:has([name="color"]){display:none!important}#taskForm{position:relative}.task-color-swatches{position:absolute;top:3px;right:22px;display:flex;gap:5px;align-items:center}.task-color-swatches button{width:13px;height:13px;min-width:13px;padding:0;border:1px solid #d2dbd6;border-radius:50%;box-shadow:none}.task-color-swatches button.selected{outline:2px solid var(--green);outline-offset:2px}.task-color-swatches button[data-color-value="white"]{border-color:#aeb9b3}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="repeat"]){grid-column:1!important;min-width:0}#taskForm label:has([name="reminder"]),#taskForm label:has([name="status"]){grid-column:2!important;min-width:0}#taskForm label:has([name="color"]){display:none!important}#taskForm{position:relative}.task-color-swatches{position:absolute;top:3px;right:22px;display:flex;gap:5px;align-items:center}.task-color-swatches button{width:13px;height:13px;min-width:13px;padding:0;border:1px solid #d2dbd6;border-radius:50%;box-shadow:none}.task-color-swatches button.selected{outline:2px solid var(--green);outline-offset:2px}.task-color-swatches button[data-color-value="white"]{border-color:#aeb9b3}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}.reminder-toast button{position:absolute;right:8px;top:7px;border:0;background:transparent;color:var(--muted);font-size:17px;padding:1px 5px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
 
   const localDateForCalendar = date => {
     const copy = new Date(date);
@@ -197,9 +197,13 @@
     title.textContent = `리마인더 · ${task.title}`;
     const detail = document.createElement('small');
     detail.textContent = `${task.date} ${task.time} 일정이 다가옵니다.`;
-    toast.append(title, detail);
+    const dismiss = document.createElement('button');
+    dismiss.type = 'button';
+    dismiss.textContent = '×';
+    dismiss.title = '닫기';
+    dismiss.addEventListener('click', () => toast.remove());
+    toast.append(title, detail, dismiss);
     document.body.append(toast);
-    setTimeout(() => toast.remove(), 9000);
   };
   const checkReminders = () => {
     if (typeof db === 'undefined') return;
@@ -210,7 +214,8 @@
       const due = new Date(`${task.date}T${task.time}:00`).getTime();
       const reminderAt = due - Number(task.reminder) * 60 * 1000;
       const key = `${task.id}|${task.date}|${task.time}|${task.reminder}`;
-      if (now >= reminderAt && now < due && !seen.has(key)) {
+      const visibleUntil = Number(task.reminder) === 0 ? due + 10 * 60 * 1000 : due;
+      if (now >= reminderAt && now < visibleUntil && !seen.has(key)) {
         seen.add(key);
         showReminder(task);
       }
