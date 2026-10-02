@@ -42,9 +42,15 @@
     const headerIndex = matrix.findIndex(row => row.some(value =>
       ['품목', '제품명', '제품', 'product', 'product name'].some(name => normal(value).includes(normal(name)))
     ));
-    if (headerIndex < 0) return [];
-    return XLSX.utils.sheet_to_json(sheet, { range: headerIndex, defval: '', raw: false })
-      .filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
+    // The supplied history file has its column headers in row 2. Try that
+    // explicit layout as a fallback as well as any detected header row.
+    const candidateRows = [...new Set([headerIndex, 1, 0].filter(index => index >= 0))];
+    for (const range of candidateRows) {
+      const rows = XLSX.utils.sheet_to_json(sheet, { range, defval: '', raw: false })
+        .filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
+      if (rows.length) return rows;
+    }
+    return [];
   };
   const detailFields = row => {
     const ipManagementNumber = frontNumberValue(row, 5, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
