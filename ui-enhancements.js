@@ -21,6 +21,21 @@
 
   addShipmentDisplayField();
 
+  const addTaskTimingFields = () => {
+    const form = document.querySelector('#taskForm');
+    if (!form || form.elements.time || form.elements.reminder) return;
+    const timeField = document.createElement('label');
+    timeField.innerHTML = '시간<input name="time" type="time">';
+    const endDateField = form.elements.endDate?.closest('label');
+    (endDateField || form.elements.date?.closest('label'))?.insertAdjacentElement('afterend', timeField);
+    const reminderField = document.createElement('label');
+    reminderField.innerHTML = '리마인더<select name="reminder"><option value="">알림 안 함</option><option value="5">5분 전</option><option value="15">15분 전</option><option value="30">30분 전</option><option value="60">1시간 전</option><option value="120">2시간 전</option><option value="1440">1일 전</option><option value="4320">3일 전</option></select>';
+    const repeatField = form.elements.repeat?.closest('label');
+    (repeatField || timeField).insertAdjacentElement('afterend', reminderField);
+  };
+  addTaskTimingFields();
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="reminder"]){min-width:0}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
+
   const localDateForCalendar = date => {
     const copy = new Date(date);
     copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
@@ -128,16 +143,61 @@
       });
     });
   };
+  const showTaskTimes = () => {
+    if (typeof db === 'undefined') return;
+    document.querySelectorAll('.event[data-drag^="task:"]').forEach(event => {
+      const task = db.tasks.find(item => item.id === event.dataset.drag.slice(5));
+      const label = event.querySelector('span');
+      if (task?.time && label && !label.textContent.startsWith(`${task.time} · `)) label.textContent = `${task.time} · ${label.textContent}`;
+    });
+    document.querySelectorAll('.task [data-done]').forEach(box => {
+      const task = db.tasks.find(item => item.id === box.dataset.done);
+      const date = box.closest('.task')?.querySelector('small');
+      if (task?.time && date && !date.textContent.includes(task.time)) date.textContent = `${task.date} · ${task.time}`;
+    });
+  };
+  const reminderSeenKey = 'shipment-reminders-seen';
+  const showReminder = task => {
+    const toast = document.createElement('div');
+    toast.className = 'reminder-toast';
+    const title = document.createElement('strong');
+    title.textContent = `리마인더 · ${task.title}`;
+    const detail = document.createElement('small');
+    detail.textContent = `${task.date} ${task.time} 일정이 다가옵니다.`;
+    toast.append(title, detail);
+    document.body.append(toast);
+    setTimeout(() => toast.remove(), 9000);
+  };
+  const checkReminders = () => {
+    if (typeof db === 'undefined') return;
+    const seen = new Set(JSON.parse(sessionStorage.getItem(reminderSeenKey) || '[]'));
+    const now = Date.now();
+    db.tasks.forEach(task => {
+      if (!task.time || !task.reminder || task.status === 'done') return;
+      const due = new Date(`${task.date}T${task.time}:00`).getTime();
+      const reminderAt = due - Number(task.reminder) * 60 * 1000;
+      const key = `${task.id}|${task.date}|${task.time}|${task.reminder}`;
+      if (now >= reminderAt && now < due && !seen.has(key)) {
+        seen.add(key);
+        showReminder(task);
+      }
+    });
+    sessionStorage.setItem(reminderSeenKey, JSON.stringify([...seen]));
+  };
 
   if (typeof render === 'function') {
     const originalRender = render;
     render = () => {
       originalRender();
       relabelShipmentItems();
+      showTaskTimes();
       renderPendingPaymentCard();
     };
   }
   relabelShipmentItems();
+  showTaskTimes();
   renderPendingPaymentCard();
   setInterval(renderPendingPaymentCard, 500);
+  setInterval(checkReminders, 30000);
+  checkReminders();
 })();
