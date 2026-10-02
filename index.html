@@ -83,6 +83,10 @@
   <style>
     .key-tasks label { font-size: 13px !important; }
     .key-tasks input { font-size: 12px !important; }
+    .key-tasks { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) 22px !important; gap: 10px !important; align-items: start !important; }
+    .key-tasks label { display: grid !important; grid-template-rows: auto 27px; justify-items: center !important; align-items: start; text-align: center !important; min-width: 0; }
+    .key-tasks input { width: 100% !important; max-width: 156px; margin: 5px 0 0 !important; justify-self: center !important; text-align: center !important; }
+    .key-tasks .open { align-self: center; justify-self: center; }
     #taskForm { position: relative; }
     #taskForm > label:has([name="date"]), #taskForm > label:has([name="endDate"]) { order: 2; }
     #taskForm > label:has([name="time"]), #taskForm > label:has([name="reminder"]) { order: 3; }
