@@ -49,6 +49,8 @@
       <h2>할 일 추가</h2>
       <label>할 일<input name="title" required placeholder="예: 선적 서류 확인"></label>
       <label>날짜<input name="date" type="date" required></label>
+      <label>시간<input name="time" type="time"></label>
+      <label>리마인더<select name="reminder"><option value="">알림 안 함</option><option value="5">5분 전</option><option value="15">15분 전</option><option value="30">30분 전</option><option value="60">1시간 전</option><option value="120">2시간 전</option><option value="1440">1일 전</option><option value="4320">3일 전</option></select></label>
       <label>색상<select name="color"><option value="pink">로즈</option><option value="blue">블루</option><option value="gold">골드</option></select></label>
       <div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div>
     </form>
@@ -67,7 +69,7 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js?v=new-entry-date-defaults-2"></script>
-  <script src="ui-enhancements.js?v=task-time-reminders-1"></script>
+  <script src="ui-enhancements.js?v=task-time-reminders-2"></script>
   <script src="sync.js?v=weekly-preview-left-align-3"></script>
 </body>
 </html>
