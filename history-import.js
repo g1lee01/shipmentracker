@@ -38,7 +38,9 @@
     `숫자${position}`, `숫자 ${position}`, `number${position}`, `number ${position}`,
   ]);
   const firstSheetRows = sheet => {
-    const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+    // Keep Excel serial values as numbers. Some workbooks display only M/D,
+    // which drops the year when SheetJS returns formatted text.
+    const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: true });
     const headerIndex = matrix.findIndex(row => row.some(value =>
       ['품목', '제품명', '제품', 'product', 'product name'].some(name => normal(value).includes(normal(name)))
     ));
@@ -46,7 +48,7 @@
     // explicit layout as a fallback as well as any detected header row.
     const candidateRows = [...new Set([headerIndex, 1, 0].filter(index => index >= 0))];
     for (const range of candidateRows) {
-      const rows = XLSX.utils.sheet_to_json(sheet, { range, defval: '', raw: false })
+      const rows = XLSX.utils.sheet_to_json(sheet, { range, defval: '', raw: true })
         .filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
       if (rows.length) return rows;
     }
@@ -130,6 +132,14 @@
         return;
       }
       if (!confirm(`${ships.length}건의 과거 선적 이력을 불러올까요? 체크리스트는 모두 완료 처리됩니다.`)) return;
+      // Re-uploading the same history updates earlier incomplete imports rather
+      // than leaving a duplicate record with blank Excel dates behind.
+      const sameHistory = (existing, candidate) => {
+        const keys = ['견적 생성', '오더 번호', '납품 번호', '선적 문서', 'IP 관리 번호'];
+        const matchedNumbers = keys.filter(key => candidate.fields[key] && candidate.fields[key] === existing.fields?.[key]);
+        return existing.product === candidate.product && matchedNumbers.length >= 2;
+      };
+      db.ships = db.ships.filter(existing => !ships.some(candidate => sameHistory(existing, candidate)));
       db.ships.push(...ships);
       db.countries = [...new Set([...(db.countries || []), ...ships.map(ship => ship.country).filter(Boolean)])];
       // The tracker is filtered by ETD month. Move to a month containing the
