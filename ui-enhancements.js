@@ -193,8 +193,11 @@
     const count = document.querySelector('#paymentPendingCount');
     const list = document.querySelector('.payment-pending-list');
     if (!count || !list || typeof db === 'undefined') return;
+    const activeMonth = typeof month === 'undefined'
+      ? new Date().toISOString().slice(0, 7)
+      : `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
     const pending = db.ships
-      .filter(ship => ship.payment && !ship.done?.['입금 확인'])
+      .filter(ship => ship.payment && !ship.done?.['입금 확인'] && paymentDate(ship).startsWith(activeMonth))
       .sort((a, b) => (paymentDate(a) || '9999-99-99').localeCompare(paymentDate(b) || '9999-99-99'));
     count.textContent = `${pending.length}건`;
     list.replaceChildren(...pending.map(ship => {
