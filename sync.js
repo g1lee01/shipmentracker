@@ -30,8 +30,9 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   const setAccountLabel = () => {
     const button = accountButton();
     if (!button) return;
-    button.textContent = currentUser ? 'My account' : 'Login';
-    button.title = currentUser?.email || '동기화 로그인';
+    button.textContent = '🔑';
+    button.title = currentUser ? `My account · ${currentUser.email}` : 'Login';
+    button.setAttribute('aria-label', currentUser ? 'My account' : 'Login');
   };
 
   const showMessage = (message, isError = false) => {
@@ -224,11 +225,21 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   const addCloudInterface = () => {
     const header = document.querySelector('.header-right');
     if (!header || accountButton()) return;
+    const controls = document.createElement('div');
+    controls.className = 'cloud-controls';
     const button = document.createElement('button');
     button.id = 'cloudAccount';
     button.type = 'button';
     button.addEventListener('click', openAccountDialog);
-    header.append(button);
+    const settings = document.createElement('button');
+    settings.id = 'cloudSettings';
+    settings.type = 'button';
+    settings.textContent = '⚙';
+    settings.title = '테마 설정';
+    settings.setAttribute('aria-label', '테마 설정');
+    settings.addEventListener('click', () => document.querySelector('.settings-button')?.click());
+    controls.append(button, settings);
+    header.append(controls);
     setAccountLabel();
   };
 
@@ -273,7 +284,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   subscribeToAuth();
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-    .settings-button{display:none!important}#cloudAccount{border:1px solid var(--line);background:var(--card);color:var(--green);white-space:nowrap;font-size:10px;padding:6px 8px;font-weight:600}
+    .settings-button{display:none!important}.cloud-controls{display:grid;gap:5px}.cloud-controls button{width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--green);font-size:14px;line-height:1}.cloud-controls #cloudAccount{font-size:13px}
     #cloudNotice{position:fixed;right:22px;bottom:22px;z-index:40;max-width:300px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);box-shadow:0 8px 28px #1c34251d;font-size:12px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
     #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}.cloud-keep{display:flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:500!important}.cloud-keep input{height:auto!important}.account-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.account-menu button,.password-change>button{font-size:12px}.password-change{padding:10px;border:1px solid var(--line);border-radius:7px}.password-change label{font-size:11px}.password-change input{height:34px}
   </style>`);
