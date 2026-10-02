@@ -9,7 +9,17 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     return;
   }
 
-  const cloud = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  let keepLogin = localStorage.getItem('shipping-keep-login') !== 'false';
+  let cloud;
+  const createCloudClient = () => window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage: keepLogin ? localStorage : sessionStorage,
+      storageKey: 'shipment-tracker-auth',
+    },
+  });
   const STATE_TABLE = 'shipping_app_state';
   const PHOTO_BUCKET = 'shipping-photos';
   let currentUser = null;
@@ -20,7 +30,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   const setAccountLabel = () => {
     const button = accountButton();
     if (!button) return;
-    button.textContent = currentUser ? '내 계정' : '로그인';
+    button.textContent = currentUser ? 'My account' : 'Login';
     button.title = currentUser?.email || '동기화 로그인';
   };
 
@@ -147,6 +157,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
         <p class="cloud-help">같은 계정으로 로그인하면 모든 컴퓨터에서 선적 정보와 사진을 볼 수 있어요.</p>
         <label>이메일<input name="email" type="email" autocomplete="email" required></label>
         <label>비밀번호<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+        <label class="cloud-keep"><input name="keep" type="checkbox" ${keepLogin ? 'checked' : ''}> 로그인 상태 유지</label>
         <p class="cloud-form-message" aria-live="polite"></p>
         <div class="actions"><button type="button" class="cancel" data-close-auth>취소</button><button type="button" data-signup>계정 만들기</button><button class="primary" value="login">로그인</button></div>
       </form>`;
@@ -159,6 +170,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
         const password = form.elements.password.value;
         if (event.target.dataset.signup !== undefined) {
           if (!form.reportValidity()) return;
+          await setLoginPersistence(form.elements.keep.checked);
           const { error } = await cloud.auth.signUp({ email, password, options: { emailRedirectTo: location.href } });
           message.textContent = error ? error.message : '인증 메일을 보냈어요. 메일 인증 후 로그인해 주세요.';
           message.dataset.error = error ? 'true' : 'false';
@@ -169,6 +181,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
         const form = event.currentTarget;
         if (!form.reportValidity()) return;
         const message = form.querySelector('.cloud-form-message');
+        await setLoginPersistence(form.elements.keep.checked);
         const { error } = await cloud.auth.signInWithPassword({ email: form.elements.email.value.trim(), password: form.elements.password.value });
         if (error) { message.textContent = error.message; message.dataset.error = 'true'; return; }
         dialog.close();
@@ -180,11 +193,23 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   const openAccountDialog = () => {
     if (!currentUser) return openAuthDialog();
     const dialog = document.createElement('dialog');
-    dialog.innerHTML = `<form method="dialog"><button class="close" type="button">×</button><h2>동기화 계정</h2><p class="cloud-help">${currentUser.email}</p><div class="actions"><button type="button" class="cancel" data-signout>로그아웃</button><button class="primary">닫기</button></div></form>`;
+    dialog.innerHTML = `<form method="dialog"><button class="close" type="button">×</button><p class="cloud-kicker">MY ACCOUNT</p><h2>내 계정</h2><p class="cloud-help">${currentUser.email}</p><div class="account-menu"><button type="button" data-theme-settings>테마 설정</button><button type="button" data-password>비밀번호 변경</button></div><div class="password-change" hidden><label>새 비밀번호<input name="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상"></label><p class="cloud-form-message" aria-live="polite"></p><button type="button" data-save-password>비밀번호 저장</button></div><div class="actions"><button type="button" class="cancel" data-signout>로그아웃</button><button class="primary">닫기</button></div></form>`;
     document.body.append(dialog);
     dialog.showModal();
     dialog.addEventListener('click', async event => {
       if (event.target.classList.contains('close')) dialog.close();
+      if (event.target.dataset.themeSettings !== undefined) document.querySelector('.settings-button')?.click();
+      if (event.target.dataset.password !== undefined) dialog.querySelector('.password-change').hidden = false;
+      if (event.target.dataset.savePassword !== undefined) {
+        const form = dialog.querySelector('form');
+        const password = form.elements.newPassword.value;
+        const message = form.querySelector('.cloud-form-message');
+        if (password.length < 6) { message.textContent = '비밀번호는 6자 이상으로 입력해 주세요.'; message.dataset.error = 'true'; return; }
+        const { error } = await cloud.auth.updateUser({ password });
+        message.textContent = error ? error.message : '비밀번호를 변경했어요.';
+        message.dataset.error = error ? 'true' : 'false';
+        if (!error) form.elements.newPassword.value = '';
+      }
       if (event.target.dataset.signout !== undefined) {
         await cloud.auth.signOut();
         localStorage.removeItem(KEY);
@@ -227,7 +252,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     }
   }, true);
 
-  cloud.auth.onAuthStateChange(async (_event, session) => {
+  const subscribeToAuth = () => cloud.auth.onAuthStateChange(async (_event, session) => {
     const nextUser = session?.user || null;
     if (nextUser?.id === currentUser?.id) return;
     currentUser = nextUser;
@@ -235,10 +260,22 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     if (currentUser) await loadState();
   });
 
+  const setLoginPersistence = async keep => {
+    if (keep === keepLogin) return;
+    await cloud.auth.signOut({ scope: 'local' });
+    keepLogin = keep;
+    localStorage.setItem('shipping-keep-login', keep ? 'true' : 'false');
+    cloud = createCloudClient();
+    subscribeToAuth();
+  };
+
+  cloud = createCloudClient();
+  subscribeToAuth();
+
   document.head.insertAdjacentHTML('beforeend', `<style>
-    #cloudAccount{border:1px solid var(--line);background:var(--card);color:var(--green);white-space:nowrap}
+    .settings-button{display:none!important}#cloudAccount{border:1px solid var(--line);background:var(--card);color:var(--green);white-space:nowrap}
     #cloudNotice{position:fixed;right:22px;bottom:22px;z-index:40;max-width:300px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);box-shadow:0 8px 28px #1c34251d;font-size:12px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
-    #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}
+    #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}.cloud-keep{display:flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:500!important}.cloud-keep input{height:auto!important}.account-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.account-menu button,.password-change>button{font-size:12px}.password-change{padding:10px;border:1px solid var(--line);border-radius:7px}.password-change label{font-size:11px}.password-change input{height:34px}
   </style>`);
   addCloudInterface();
 })();
