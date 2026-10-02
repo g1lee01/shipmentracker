@@ -1,7 +1,7 @@
 /* Core interface enhancements. Kept independent from cloud sync so they work
    even if the Supabase CDN is temporarily unavailable. */
 (() => {
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}#calendarGrid,.week{grid-template-columns:.9fr repeat(5,minmax(0,1fr)) .9fr!important}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}#calendarGrid,.week{grid-template-columns:.9fr repeat(5,minmax(0,1fr)) .9fr!important}#calendarGrid .day.month-end:not(.business-close):after{content:none!important}#calendarGrid .day.month-end:not(.business-close):not(.holiday):not(.vacation-day){background:var(--card)!important}</style>');
 
   const todayForInput = () => {
     const now = new Date();
@@ -35,16 +35,13 @@
   };
   const placeMonthClosingOnBusinessDay = () => {
     if (typeof month === 'undefined' || typeof db === 'undefined') return;
-    document.querySelectorAll('#calendarGrid .month-end').forEach(day => {
-      day.classList.remove('month-end');
-      delete day.dataset.monthSummary;
-    });
+    document.querySelectorAll('#calendarGrid .business-close').forEach(day => day.classList.remove('business-close'));
     const closingDate = lastBusinessDay(month.getFullYear(), month.getMonth());
     const closingDay = document.querySelector(`#calendarGrid .day[data-date="${closingDate}"]`);
     if (!closingDay) return;
     const yearMonth = closingDate.slice(0, 7);
     const count = db.ships.filter(ship => ship.etd?.startsWith(yearMonth)).length;
-    closingDay.classList.add('month-end');
+    closingDay.classList.add('month-end', 'business-close');
     closingDay.dataset.monthSummary = `마감 (${count}건)`;
   };
   setInterval(placeMonthClosingOnBusinessDay, 120);
