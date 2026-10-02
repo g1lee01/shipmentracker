@@ -40,13 +40,11 @@
   const firstSheetRows = sheet => {
     const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
     const headerIndex = matrix.findIndex(row => row.some(value =>
-      ['품목', '제품명', '제품', 'product', 'product name'].some(name => normal(value) === normal(name))
+      ['품목', '제품명', '제품', 'product', 'product name'].some(name => normal(value).includes(normal(name)))
     ));
     if (headerIndex < 0) return [];
-    const headers = matrix[headerIndex];
-    return matrix.slice(headerIndex + 1).map(values => Object.fromEntries(
-      headers.map((header, index) => [header, values[index] ?? ''])
-    )).filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
+    return XLSX.utils.sheet_to_json(sheet, { range: headerIndex, defval: '', raw: false })
+      .filter(row => rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']));
   };
   const detailFields = row => {
     const ipManagementNumber = frontNumberValue(row, 5, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
@@ -120,7 +118,7 @@
         return ship;
       }).filter(Boolean);
       if (!ships.length) {
-        alert('제품명 열을 찾지 못했습니다. 첫 행에 제품명 또는 Product 헤더가 있는지 확인해 주세요.');
+        alert('제품명 또는 품목 열을 찾지 못했습니다. 파일의 헤더 행을 확인해 주세요.');
         return;
       }
       if (!confirm(`${ships.length}건의 과거 선적 이력을 불러올까요? 체크리스트는 모두 완료 처리됩니다.`)) return;
