@@ -449,7 +449,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     setTimeout(applyNewEntryDateDefaults, 0);
   }, true);
 
-  document.head.insertAdjacentHTML('beforeend', '<style>.weekly-shipment-list{display:grid;gap:3px;margin-top:2px}.weekly-shipment-list small{color:var(--muted);font-size:9px;line-height:1.35;white-space:normal}.summary .split b{margin-bottom:3px}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>.summary .split .weekly-shipment-list{display:grid;width:100%;gap:3px;margin:2px 0 0!important;padding:0!important;text-align:left!important;justify-items:start!important;align-items:start}.summary .split .weekly-shipment-list small{display:block;width:100%;color:var(--muted);font-size:9px;line-height:1.35;white-space:normal;text-align:left!important}.summary .split b{margin-bottom:3px}</style>');
 
   // A compact preview beneath this week's dispatch / ETD totals.
   const formatWeekShipmentDate = value => {
