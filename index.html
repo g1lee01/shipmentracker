@@ -76,6 +76,25 @@
       <div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div>
     </form>
   </dialog>
+  <script>
+    (() => {
+      const timeSelect = document.querySelector('#taskForm select[name="time"]');
+      if (!timeSelect) return;
+      [...timeSelect.options].forEach(option => {
+        if (!option.value) return;
+        const [hour, minute] = option.value.split(':').map(Number);
+        option.textContent = `${hour < 12 ? 'AM' : 'PM'} ${hour % 12 || 12}:${String(minute).padStart(2, '0')}`;
+      });
+      timeSelect.addEventListener('wheel', event => {
+        event.preventDefault();
+        const direction = event.deltaY > 0 ? 1 : -1;
+        const next = Math.max(0, Math.min(timeSelect.options.length - 1, timeSelect.selectedIndex + direction));
+        if (next === timeSelect.selectedIndex) return;
+        timeSelect.selectedIndex = next;
+        timeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      }, { passive: false });
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js?v=new-entry-date-defaults-2"></script>
   <script src="ui-enhancements.js?v=current-month-payments-1"></script>
