@@ -286,7 +286,74 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   document.head.insertAdjacentHTML('beforeend', `<style>
     body,button,input,select,textarea{font-family:"Avenir Next","Helvetica Neue","Noto Sans KR","Apple SD Gothic Neo",sans-serif}.settings-button{display:none!important}.cloud-controls{display:grid;gap:5px}.cloud-controls button{width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--green);font-size:14px;line-height:1}.cloud-controls #cloudAccount{font-size:13px}
     #cloudNotice{position:fixed;right:22px;bottom:22px;z-index:40;max-width:300px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);box-shadow:0 8px 28px #1c34251d;font-size:12px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
-    #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}.cloud-keep{display:flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:500!important}.cloud-keep input{height:auto!important}.account-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.account-menu button,.password-change>button{font-size:12px}.password-change{padding:10px;border:1px solid var(--line);border-radius:7px}.password-change label{font-size:11px}.password-change input{height:34px}
+    #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}.cloud-keep{display:flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:500!important}.cloud-keep input{height:auto!important}.account-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.account-menu button,.password-change>button{font-size:12px}.password-change{padding:10px;border:1px solid var(--line);border-radius:7px}.password-change label{font-size:11px}.password-change input{height:34px}.detail-modal .work-row [data-custom-field]{width:118px;height:28px;border:1px solid var(--line);border-radius:5px;padding:4px 7px;font-size:11px}
   </style>`);
+
+  const detailShip = dialog => {
+    const title = dialog?.querySelector('h2')?.textContent || '';
+    return db.ships.find(ship => title.startsWith(`${ship.product}${ship.volume ? ` ${ship.volume}` : ''} (${ship.port || '도착항 미정'})`));
+  };
+
+  const enhanceCustomFields = () => {
+    document.querySelectorAll('.detail-modal').forEach(dialog => {
+      const ship = detailShip(dialog);
+      if (!ship?.taskTypes) return;
+      dialog.querySelectorAll('.work-row[data-item]').forEach(row => {
+        const name = row.dataset.item;
+        if (ship.taskTypes[name] !== 'field' || row.querySelector('[data-custom-field]')) return;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '입력';
+        input.value = ship.fields?.[name] || '';
+        input.dataset.customField = name;
+        input.addEventListener('input', () => {
+          ship.fields = ship.fields || {};
+          ship.fields[name] = input.value;
+          save();
+        });
+        row.append(input);
+      });
+    });
+  };
+
+  const openNewChecklistTask = (ship, column, detailDialog) => {
+    const dialog = document.createElement('dialog');
+    dialog.innerHTML = `<form><button class="close" type="button">×</button><h2>새 업무 추가</h2><label>업무명<input name="title" required placeholder="예: 검사 번호"></label><label>업무 형태<select name="kind"><option value="check">체크리스트</option><option value="field">체크리스트 + 빈칸 입력</option></select></label><div class="actions"><button type="button" class="cancel">취소</button><button class="primary">추가</button></div></form>`;
+    document.body.append(dialog);
+    dialog.showModal();
+    dialog.querySelector('.close').onclick = () => dialog.close();
+    dialog.querySelector('.cancel').onclick = () => dialog.close();
+    dialog.querySelector('form').onsubmit = event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const title = form.elements.title.value.trim();
+      if (!title) return;
+      ship.layout[column].push(title);
+      if (form.elements.kind.value === 'field') {
+        ship.taskTypes = ship.taskTypes || {};
+        ship.taskTypes[title] = 'field';
+        ship.fields = ship.fields || {};
+      }
+      save();
+      dialog.close();
+      detailDialog.close();
+      if (typeof detail === 'function') detail(ship);
+    };
+    dialog.addEventListener('close', () => dialog.remove());
+  };
+
+  // Replace the original prompt with a task-type picker while preserving every existing task action.
+  document.addEventListener('click', event => {
+    const add = event.target.closest('.detail-modal [data-add]');
+    if (!add) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const detailDialog = add.closest('.detail-modal');
+    const ship = detailShip(detailDialog);
+    if (ship) openNewChecklistTask(ship, add.dataset.add, detailDialog);
+  }, true);
+
+  new MutationObserver(enhanceCustomFields).observe(document.body, { childList: true, subtree: true });
+  enhanceCustomFields();
   addCloudInterface();
 })();
