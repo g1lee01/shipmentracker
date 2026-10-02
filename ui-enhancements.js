@@ -21,6 +21,45 @@
 
   addShipmentDisplayField();
 
+  // Keep linked number fields in sync only inside the same shipment.
+  // The original listener matched every card with the same field name.
+  const linkedTaskForField = { '견적 생성': '견적 번호', '오더 번호': '오더 번호', '납품 번호': '납품 번호', '선적 문서': '선적 번호', 'IP 관리 번호': '보험료' };
+  const shipForDetailDialog = dialog => {
+    const heading = dialog?.querySelector('h2')?.textContent || '';
+    return db.ships.find(ship => heading.startsWith(`${ship.product}${ship.volume ? ` ${ship.volume}` : ''} (${ship.port || '도착항 미정'})`));
+  };
+  document.addEventListener('input', event => {
+    const field = event.target.closest?.('input[data-front], input[data-link]');
+    if (!field || typeof db === 'undefined') return;
+    const key = field.dataset.front || field.dataset.link;
+    const ship = field.dataset.ship
+      ? db.ships.find(item => item.id === field.dataset.ship)
+      : shipForDetailDialog(field.closest('.detail-modal'));
+    if (!key || !ship) return;
+    event.stopImmediatePropagation();
+    ship.fields = ship.fields || {};
+    ship.fields[key] = field.value;
+    if (field.value) {
+      ship.done = ship.done || {};
+      ship.done[linkedTaskForField[key] || key] = true;
+    }
+    save();
+    document.querySelectorAll('input[data-front]').forEach(input => {
+      if (input.dataset.ship !== ship.id || input.dataset.front !== key || input === field) return;
+      input.value = field.value;
+      input.classList.toggle('number-filled', !!field.value);
+    });
+    document.querySelectorAll('.detail-modal').forEach(dialog => {
+      if (shipForDetailDialog(dialog)?.id !== ship.id) return;
+      dialog.querySelectorAll('input[data-link]').forEach(input => {
+        if (input.dataset.link !== key || input === field) return;
+        input.value = field.value;
+        input.classList.toggle('number-filled', !!field.value);
+      });
+    });
+    field.classList.toggle('number-filled', !!field.value);
+  }, true);
+
   const addTaskTimingFields = () => {
     const form = document.querySelector('#taskForm');
     if (!form || form.elements.time || form.elements.reminder) return;
