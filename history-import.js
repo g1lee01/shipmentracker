@@ -130,9 +130,17 @@
       if (!confirm(`${ships.length}건의 과거 선적 이력을 불러올까요? 체크리스트는 모두 완료 처리됩니다.`)) return;
       db.ships.push(...ships);
       db.countries = [...new Set([...(db.countries || []), ...ships.map(ship => ship.country).filter(Boolean)])];
+      // The tracker is filtered by ETD month. Move to a month containing the
+      // imported history so a successful import is visible immediately.
+      const latestEtd = ships.map(ship => ship.etd).filter(Boolean).sort().at(-1);
+      if (latestEtd) {
+        month = new Date(`${latestEtd}T12:00:00`);
+        const shipmentMonth = document.querySelector('#shipmentMonth');
+        if (shipmentMonth) shipmentMonth.value = latestEtd.slice(0, 7);
+      }
       save();
       render();
-      alert(`${ships.length}건을 불러왔습니다.`);
+      alert(`${ships.length}건을 불러왔습니다.${latestEtd ? ' 해당 ETD 월로 이동했습니다.' : ''}`);
     } catch (error) {
       alert(`엑셀 파일을 읽지 못했습니다: ${error.message}`);
     }
