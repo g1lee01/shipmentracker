@@ -412,5 +412,57 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     setTimeout(applyNewEntryDateDefaults, 0);
   }, true);
 
+  document.head.insertAdjacentHTML('beforeend', '<style>.weekly-shipment-list{display:grid;gap:3px;margin-top:2px}.weekly-shipment-list small{color:var(--muted);font-size:9px;line-height:1.35;white-space:normal}.summary .split b{margin-bottom:3px}</style>');
+
+  // A compact preview beneath this week's dispatch / ETD totals.
+  const formatWeekShipmentDate = value => {
+    if (!value) return '';
+    const date = new Date(`${value}T00:00:00`);
+    const weekday = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    return `${date.getMonth() + 1}.${date.getDate()} (${weekday})`;
+  };
+  const getThisWeekShipments = field => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    const toLocalDate = date => {
+      const copy = new Date(date);
+      copy.setMinutes(copy.getMinutes() - copy.getTimezoneOffset());
+      return copy.toISOString().slice(0, 10);
+    };
+    const from = toLocalDate(start);
+    const to = toLocalDate(end);
+    return db.ships
+      .filter(ship => ship[field] && ship[field] >= from && ship[field] <= to)
+      .sort((a, b) => a[field].localeCompare(b[field]));
+  };
+  const renderWeeklyShipmentPreview = () => {
+    [['dispatch', 'dispatchCount'], ['etd', 'etdCount']].forEach(([field, countId]) => {
+      const count = document.getElementById(countId);
+      if (!count) return;
+      const shipments = getThisWeekShipments(field);
+      count.textContent = `${shipments.length}건`;
+      let list = count.parentElement.querySelector(`.weekly-shipment-list[data-for="${field}"]`);
+      if (!list) {
+        list = document.createElement('div');
+        list.className = 'weekly-shipment-list';
+        list.dataset.for = field;
+        count.insertAdjacentElement('afterend', list);
+      }
+      list.replaceChildren(...shipments.map(ship => {
+        const item = document.createElement('small');
+        const volume = ship.volume ? ` ${ship.volume}` : '';
+        item.textContent = `${formatWeekShipmentDate(ship[field])} · ${ship.product}${volume} (${ship.country || '국가 미정'})`;
+        return item;
+      }));
+    });
+  };
+  const renderBeforeWeeklyPreview = render;
+  render = () => {
+    renderBeforeWeeklyPreview();
+    renderWeeklyShipmentPreview();
+  };
+  renderWeeklyShipmentPreview();
+
   addCloudInterface();
 })();
