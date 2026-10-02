@@ -41,7 +41,7 @@
     const status = form.elements.status?.closest('label');
     if (repeat && status && repeat.nextElementSibling !== status) status.before(repeat);
     const color = form.elements.color;
-    if (!color || form.querySelector('.task-color-swatches')) return;
+    if (!color || form.querySelector('.task-color-swatches, .static-color-chips')) return;
     const chips = document.createElement('div');
     chips.className = 'task-color-swatches';
     const colors = [['pink', '#e9aab8', '로즈'], ['red', '#df7d7d', '레드'], ['orange', '#e8a052', '오렌지'], ['gold', '#d4ad4a', '골드'], ['green', '#75ad83', '그린'], ['blue', '#82aeda', '블루'], ['purple', '#aa8ac9', '퍼플'], ['white', '#ffffff', '화이트']];

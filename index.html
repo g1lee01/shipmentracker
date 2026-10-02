@@ -47,11 +47,20 @@
     <form id="taskForm">
       <button class="close" type="button">×</button>
       <h2>할 일 추가</h2>
+      <div class="static-color-chips" aria-label="색상 선택">
+        <button type="button" class="selected" title="로즈" style="background:#e9aab8" onclick="this.form.elements.color.value='pink';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="레드" style="background:#df7d7d" onclick="this.form.elements.color.value='red';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="오렌지" style="background:#e8a052" onclick="this.form.elements.color.value='orange';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="골드" style="background:#d4ad4a" onclick="this.form.elements.color.value='gold';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="그린" style="background:#75ad83" onclick="this.form.elements.color.value='green';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="블루" style="background:#82aeda" onclick="this.form.elements.color.value='blue';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+        <button type="button" title="퍼플" style="background:#aa8ac9" onclick="this.form.elements.color.value='purple';this.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));this.classList.add('selected')"></button>
+      </div>
       <label>할 일<input name="title" required placeholder="예: 선적 서류 확인"></label>
       <label>날짜<input name="date" type="date" required></label>
-      <label>시간<input name="time" type="time"></label>
+      <label>시간<select name="time"><option value="">시간 선택</option><option value="00:00">00:00</option><option value="00:30">00:30</option><option value="01:00">01:00</option><option value="01:30">01:30</option><option value="02:00">02:00</option><option value="02:30">02:30</option><option value="03:00">03:00</option><option value="03:30">03:30</option><option value="04:00">04:00</option><option value="04:30">04:30</option><option value="05:00">05:00</option><option value="05:30">05:30</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="08:00">08:00</option><option value="08:30">08:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></label>
       <label>리마인더<select name="reminder"><option value="">알림 안 함</option><option value="5">5분 전</option><option value="15">15분 전</option><option value="30">30분 전</option><option value="60">1시간 전</option><option value="120">2시간 전</option><option value="1440">1일 전</option><option value="4320">3일 전</option></select></label>
-      <label>색상<select name="color"><option value="pink">로즈</option><option value="blue">블루</option><option value="gold">골드</option></select></label>
+      <label class="hidden-task-color">색상<select name="color"><option value="pink">로즈</option><option value="red">레드</option><option value="orange">오렌지</option><option value="gold">골드</option><option value="green">그린</option><option value="blue">블루</option><option value="purple">퍼플</option></select></label>
       <div class="actions"><button class="cancel" type="button">취소</button><button class="primary">저장</button></div>
     </form>
   </dialog>
@@ -69,11 +78,23 @@
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js?v=new-entry-date-defaults-2"></script>
-  <script src="ui-enhancements.js?v=task-form-layout-1"></script>
+  <script src="ui-enhancements.js?v=task-form-layout-2"></script>
   <script src="sync.js?v=weekly-preview-left-align-3"></script>
   <style>
     .key-tasks label { font-size: 13px !important; }
     .key-tasks input { font-size: 12px !important; }
+    #taskForm { position: relative; }
+    #taskForm > label:has([name="date"]), #taskForm > label:has([name="endDate"]) { order: 2; }
+    #taskForm > label:has([name="time"]), #taskForm > label:has([name="reminder"]) { order: 3; }
+    #taskForm > label:has([name="repeat"]), #taskForm > label:has([name="status"]) { order: 4; }
+    #taskForm > label:has([name="time"]), #taskForm > label:has([name="repeat"]) { grid-column: 1 !important; }
+    #taskForm > label:has([name="reminder"]), #taskForm > label:has([name="status"]) { grid-column: 2 !important; }
+    #taskForm > label:has([name="title"]) { order: 1; }
+    #taskForm > .actions { order: 7; }
+    #taskForm > .hidden-task-color { display: none !important; }
+    #taskForm .static-color-chips { position: absolute; top: 3px; right: 20px; z-index: 2; display: flex; gap: 6px; }
+    #taskForm .static-color-chips button { width: 13px; min-width: 13px; height: 13px; padding: 0; border: 1px solid #cbd5d0; border-radius: 50%; }
+    #taskForm .static-color-chips button.selected { outline: 2px solid var(--green); outline-offset: 2px; }
   </style>
 </body>
 </html>
