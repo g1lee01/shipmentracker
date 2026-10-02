@@ -409,6 +409,26 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     }
     return originalShowModalForDateDefault.apply(this, args);
   };
+  const shipmentFormForDisplay = document.querySelector('#shipmentForm');
+  if (shipmentFormForDisplay && !shipmentFormForDisplay.elements.displayBy) {
+    const field = document.createElement('label');
+    field.className = 'shipment-display-field';
+    field.innerHTML = '일정 표기<select name="displayBy"><option value="country">국가로 표시</option><option value="port">도착항으로 표시</option></select>';
+    const paymentField = shipmentFormForDisplay.elements.payment?.closest('label');
+    (paymentField || shipmentFormForDisplay.querySelector('.form-row'))?.insertAdjacentElement('afterend', field);
+  }
+  const shipmentDisplayValue = ship => ship.displayBy === 'port' && ship.port ? ship.port : (ship.country || ship.port || '국가 미정');
+  const shipmentDisplayTitle = ship => `${ship.product}${ship.volume ? ` ${ship.volume}` : ''} (${shipmentDisplayValue(ship)})`;
+  const applyShipmentDisplayLabels = () => {
+    db.ships.forEach(ship => {
+      const defaultTitle = `${ship.product}${ship.volume ? ` ${ship.volume}` : ''} (${ship.country || '국가 미정'})`;
+      const displayTitle = shipmentDisplayTitle(ship);
+      if (defaultTitle === displayTitle) return;
+      document.querySelectorAll('.event span, .task span').forEach(label => {
+        if (label.textContent.startsWith(defaultTitle)) label.textContent = `${displayTitle}${label.textContent.slice(defaultTitle.length)}`;
+      });
+    });
+  };
   const applyNewEntryDateDefaults = () => {
     const today = todayForInput();
     const taskDialog = document.querySelector('#taskDialog');
@@ -469,7 +489,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
       list.replaceChildren(...shipments.map(ship => {
         const item = document.createElement('small');
         const volume = ship.volume ? ` ${ship.volume}` : '';
-        item.textContent = `${formatWeekShipmentDate(ship[field])} · ${ship.product}${volume} (${ship.country || '국가 미정'})`;
+        item.textContent = `${formatWeekShipmentDate(ship[field])} · ${ship.product}${volume} (${shipmentDisplayValue(ship)})`;
         return item;
       }));
     });
@@ -477,8 +497,10 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   const renderBeforeWeeklyPreview = render;
   render = () => {
     renderBeforeWeeklyPreview();
+    applyShipmentDisplayLabels();
     renderWeeklyShipmentPreview();
   };
+  applyShipmentDisplayLabels();
   renderWeeklyShipmentPreview();
 
   addCloudInterface();
