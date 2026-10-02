@@ -1,6 +1,8 @@
 /* Core interface enhancements. Kept independent from cloud sync so they work
    even if the Supabase CDN is temporarily unavailable. */
 (() => {
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}</style>');
+
   const todayForInput = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
