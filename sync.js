@@ -284,7 +284,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   subscribeToAuth();
 
   document.head.insertAdjacentHTML('beforeend', `<style>
-    body,button,input,select,textarea{font-family:"Avenir Next","Helvetica Neue","Noto Sans KR","Apple SD Gothic Neo",sans-serif}.settings-button{display:none!important}.cloud-controls{display:grid;gap:5px}.cloud-controls button{width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--green);font-size:14px;line-height:1}.cloud-controls #cloudAccount{font-size:13px}
+    body,button,input,select,textarea{font-family:"Avenir Next","Helvetica Neue","Noto Sans KR","Apple SD Gothic Neo",sans-serif}.progress,.progress *{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif!important;letter-spacing:0!important}.settings-button{display:none!important}.cloud-controls{display:grid;gap:5px}.cloud-controls button{width:30px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--green);font-size:14px;line-height:1}.cloud-controls #cloudAccount{font-size:13px}#minimalShipmentMonth{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:7px;background:var(--card);padding:2px}#minimalShipmentMonth button{border:0;background:transparent;padding:3px 6px;min-width:22px;color:var(--muted);font-size:15px;line-height:1}#minimalShipmentMonth .month-label{min-width:38px;color:var(--ink);font-size:11px;font-weight:600}#minimalShipmentMonth #shipmentMonth{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
     #cloudNotice{position:fixed;right:22px;bottom:22px;z-index:40;max-width:300px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;background:var(--card);box-shadow:0 8px 28px #1c34251d;font-size:12px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.2s}
     #cloudNotice.show{opacity:1;transform:translateY(0)}#cloudNotice[data-error="true"],.cloud-form-message[data-error="true"]{color:#b24e55}.cloud-kicker{margin:0;color:var(--muted);font-size:10px;letter-spacing:.12em}.cloud-help,.cloud-form-message{margin:0;color:var(--muted);font-size:12px;line-height:1.6}.cloud-form-message{min-height:18px}.cloud-keep{display:flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:500!important}.cloud-keep input{height:auto!important}.account-menu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.account-menu button,.password-change>button{font-size:12px}.password-change{padding:10px;border:1px solid var(--line);border-radius:7px}.password-change label{font-size:11px}.password-change input{height:34px}.detail-modal .work-col[data-col="PRE"]{order:1}.detail-modal .work-col[data-col="~ING"]{order:2}.detail-modal .work-col[data-col="POST"]{order:3}.detail-modal .work-row [data-custom-field]{width:118px;height:28px;border:1px solid var(--line);border-radius:5px;padding:4px 7px;font-size:11px}
   </style>`);
@@ -355,5 +355,34 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
 
   new MutationObserver(enhanceCustomFields).observe(document.body, { childList: true, subtree: true });
   enhanceCustomFields();
+
+  const setupShipmentMonthControl = () => {
+    const input = document.querySelector('#shipmentMonth');
+    if (!input || document.querySelector('#minimalShipmentMonth')) return;
+    const control = document.createElement('div');
+    control.id = 'minimalShipmentMonth';
+    control.innerHTML = '<button type="button" data-month-step="-1" aria-label="이전 달">‹</button><button type="button" class="month-label" aria-label="월 선택"></button><button type="button" data-month-step="1" aria-label="다음 달">›</button>';
+    input.before(control);
+    control.append(input);
+    const label = control.querySelector('.month-label');
+    const updateLabel = () => { label.textContent = input.value ? `${Number(input.value.slice(5, 7))}월` : '월 선택'; };
+    const changeMonth = step => {
+      const [year, monthNumber] = input.value.split('-').map(Number);
+      const date = new Date(year || new Date().getFullYear(), (monthNumber || 1) - 1 + step, 1);
+      input.value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      updateLabel();
+    };
+    control.addEventListener('click', event => {
+      const step = event.target.dataset.monthStep;
+      if (step) changeMonth(Number(step));
+      if (event.target.classList.contains('month-label')) {
+        if (typeof input.showPicker === 'function') input.showPicker(); else input.click();
+      }
+    });
+    input.addEventListener('change', updateLabel);
+    updateLabel();
+  };
+  setupShipmentMonthControl();
   addCloudInterface();
 })();
