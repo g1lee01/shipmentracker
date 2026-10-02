@@ -90,6 +90,8 @@
       return;
     }
     try {
+      // Do not let an in-flight cloud load overwrite a just-imported history.
+      if (window.shippingCloudReady) await window.shippingCloudReady;
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = firstSheetRows(firstSheet);
@@ -140,7 +142,14 @@
       }
       save();
       render();
-      alert(`${ships.length}건을 불러왔습니다.${latestEtd ? ' 해당 ETD 월로 이동했습니다.' : ''}`);
+      const trackerMonth = document.querySelector('#shipmentMonth');
+      const visibleShipments = document.querySelectorAll('#shipmentList .shipment').length;
+      if (!visibleShipments && trackerMonth) {
+        trackerMonth.value = '';
+        trackerMonth.dispatchEvent(new Event('change', { bubbles: true }));
+        render();
+      }
+      alert(`${ships.length}건을 불러왔습니다.${visibleShipments ? ' 해당 ETD 월로 이동했습니다.' : ' 선적 현황 전체 보기로 표시했습니다.'}`);
     } catch (error) {
       alert(`엑셀 파일을 읽지 못했습니다: ${error.message}`);
     }

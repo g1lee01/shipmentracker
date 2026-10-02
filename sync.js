@@ -25,6 +25,13 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
   let currentUser = null;
   let loadingCloudState = false;
   let saveTimer = null;
+  let resolveCloudReady;
+  window.shippingCloudReady = new Promise(resolve => { resolveCloudReady = resolve; });
+  const markCloudReady = () => {
+    if (!resolveCloudReady) return;
+    resolveCloudReady();
+    resolveCloudReady = null;
+  };
 
   const accountButton = () => document.querySelector('#cloudAccount');
   const setAccountLabel = () => {
@@ -128,6 +135,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
       .maybeSingle();
     if (error) {
       showMessage(`동기화 연결 오류: ${error.message}`, true);
+      markCloudReady();
       return;
     }
     loadingCloudState = true;
@@ -144,6 +152,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
       showMessage('현재 정보를 계정에 저장했어요.');
     }
     loadingCloudState = false;
+    markCloudReady();
   };
 
   const openAuthDialog = () => {
@@ -269,6 +278,7 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     currentUser = nextUser;
     setAccountLabel();
     if (currentUser) await loadState();
+    else markCloudReady();
   });
 
   const setLoginPersistence = async keep => {
