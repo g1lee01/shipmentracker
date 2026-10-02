@@ -34,7 +34,40 @@
     (repeatField || timeField).insertAdjacentElement('afterend', reminderField);
   };
   addTaskTimingFields();
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="reminder"]){min-width:0}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
+  const arrangeTaskFields = () => {
+    const form = document.querySelector('#taskForm');
+    if (!form) return;
+    const repeat = form.elements.repeat?.closest('label');
+    const status = form.elements.status?.closest('label');
+    if (repeat && status && repeat.nextElementSibling !== status) status.before(repeat);
+    const color = form.elements.color;
+    if (!color || form.querySelector('.task-color-swatches')) return;
+    const chips = document.createElement('div');
+    chips.className = 'task-color-swatches';
+    const colors = [['pink', '#e9aab8', '로즈'], ['red', '#df7d7d', '레드'], ['orange', '#e8a052', '오렌지'], ['gold', '#d4ad4a', '골드'], ['green', '#75ad83', '그린'], ['blue', '#82aeda', '블루'], ['purple', '#aa8ac9', '퍼플'], ['white', '#ffffff', '화이트']];
+    colors.forEach(([value, swatch, label]) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.dataset.colorValue = value;
+      chip.title = label;
+      chip.setAttribute('aria-label', label);
+      chip.style.background = swatch;
+      chip.addEventListener('click', () => {
+        color.value = value;
+        color.dispatchEvent(new Event('change', { bubbles: true }));
+        updateColorChips();
+      });
+      chips.append(chip);
+    });
+    form.prepend(chips);
+  };
+  const updateColorChips = () => {
+    const form = document.querySelector('#taskForm');
+    const selected = form?.elements.color?.value;
+    form?.querySelectorAll('[data-color-value]').forEach(chip => chip.classList.toggle('selected', chip.dataset.colorValue === selected));
+  };
+  arrangeTaskFields();
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="repeat"]){grid-column:1!important;min-width:0}#taskForm label:has([name="reminder"]),#taskForm label:has([name="status"]){grid-column:2!important;min-width:0}#taskForm label:has([name="color"]){display:none!important}#taskForm{position:relative}.task-color-swatches{position:absolute;top:3px;right:22px;display:flex;gap:5px;align-items:center}.task-color-swatches button{width:13px;height:13px;min-width:13px;padding:0;border:1px solid #d2dbd6;border-radius:50%;box-shadow:none}.task-color-swatches button.selected{outline:2px solid var(--green);outline-offset:2px}.task-color-swatches button[data-color-value="white"]{border-color:#aeb9b3}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
 
   const localDateForCalendar = date => {
     const copy = new Date(date);
@@ -199,5 +232,6 @@
   renderPendingPaymentCard();
   setInterval(renderPendingPaymentCard, 500);
   setInterval(checkReminders, 30000);
+  setInterval(updateColorChips, 250);
   checkReminders();
 })();
