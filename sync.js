@@ -392,6 +392,23 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 10);
   };
+  const originalTaskModalForDateDefault = taskModal;
+  taskModal = (task = {}) => {
+    const newTask = !task.id && !task.date;
+    return originalTaskModalForDateDefault(newTask ? { ...task, date: todayForInput() } : task);
+  };
+  const originalShowModalForDateDefault = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function (...args) {
+    if (this.id === 'shipmentDialog') {
+      const form = this.querySelector('#shipmentForm');
+      if (form && !form.dataset.editId) {
+        ['dispatch', 'etd', 'eta'].forEach(name => {
+          if (form.elements[name] && !form.elements[name].value) form.elements[name].value = todayForInput();
+        });
+      }
+    }
+    return originalShowModalForDateDefault.apply(this, args);
+  };
   const applyNewEntryDateDefaults = () => {
     const today = todayForInput();
     const taskDialog = document.querySelector('#taskDialog');
