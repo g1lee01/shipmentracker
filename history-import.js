@@ -1,0 +1,107 @@
+/* Import completed historical shipments from an Excel or CSV file. */
+(() => {
+  const DEFAULT_LAYOUT = {
+    PRE: ['PI', 'PO', '구매 요청', '견적 번호', '오더 번호', '납품 번호', '선적 번호', '작업 의뢰'],
+    '~ING': ['출하 확인', '선적 확인', '수출 통지'],
+    POST: ['입금 확인', '보험료', '결제 통지', '신호등', '운송료'],
+  };
+  const normal = value => String(value ?? '').toLowerCase().replace(/[\s_\-./()]/g, '');
+  const rowValue = (row, names) => {
+    const keys = Object.keys(row);
+    const found = keys.find(key => names.some(name => normal(key) === normal(name)));
+    return found === undefined ? '' : String(row[found] ?? '').trim();
+  };
+  const dateValue = value => {
+    if (!value) return '';
+    if (value instanceof Date && !Number.isNaN(value)) return value.toISOString().slice(0, 10);
+    if (typeof value === 'number' && window.XLSX?.SSF) {
+      const date = XLSX.SSF.parse_date_code(value);
+      if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+    }
+    const match = String(value).match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/);
+    if (match) return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
+    const reverse = String(value).match(/(\d{1,2})[-./](\d{1,2})[-./](\d{2,4})/);
+    if (!reverse) return '';
+    const year = reverse[3].length === 2 ? `20${reverse[3]}` : reverse[3];
+    return `${year}-${reverse[1].padStart(2, '0')}-${reverse[2].padStart(2, '0')}`;
+  };
+  const detailFields = row => ({
+    '견적 생성': rowValue(row, ['견적 생성', '견적 번호', 'quotation', 'quote no']),
+    '오더 번호': rowValue(row, ['오더 번호', 'order no', 'order number']),
+    '납품 번호': rowValue(row, ['납품 번호', 'delivery no', 'delivery number']),
+    '선적 문서': rowValue(row, ['선적 문서', '선적 번호', 'shipping no', 'b/l']),
+    'IP 관리 번호': rowValue(row, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']),
+  });
+  const addImportButton = () => {
+    const menu = document.querySelector('.shipment-menu');
+    if (!menu || menu.querySelector('[data-import-history]')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.importHistory = '';
+    button.textContent = '엑셀 히스토리 업로드';
+    menu.append(button);
+  };
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx,.xls,.csv';
+  input.hidden = true;
+  document.body.append(input);
+
+  document.addEventListener('click', event => {
+    if (!event.target.closest('[data-import-history]')) return;
+    input.value = '';
+    input.click();
+  });
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!window.XLSX) {
+      alert('엑셀 읽기 도구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+      const ships = rows.map(row => {
+        const product = rowValue(row, ['제품명', '제품', 'product', 'product name']);
+        if (!product) return null;
+        const layout = structuredClone(db.defaults?.[product] || DEFAULT_LAYOUT);
+        const done = {};
+        Object.values(layout).flat().forEach(task => { done[task] = true; });
+        const country = rowValue(row, ['국가', 'country']);
+        const ship = {
+          id: uid(),
+          product,
+          volume: rowValue(row, ['물량', 'quantity', 'volume']),
+          country,
+          port: rowValue(row, ['도착항', 'port', 'arrival port']),
+          payment: rowValue(row, ['결제 조건', '결제조건', 'payment', 'payment term']),
+          dispatch: dateValue(rowValue(row, ['출고일', '출고', 'dispatch', 'dispatch date'])),
+          etd: dateValue(rowValue(row, ['etd', '선적일', '선적 예정일'])),
+          eta: dateValue(rowValue(row, ['eta', '도착 예정일'])),
+          displayBy: rowValue(row, ['일정 표기', 'display by']) === '도착항으로 표시' ? 'port' : 'country',
+          fields: detailFields(row),
+          done,
+          memo: rowValue(row, ['메모', 'memo', '비고', 'remarks']),
+          layout,
+        };
+        return ship;
+      }).filter(Boolean);
+      if (!ships.length) {
+        alert('제품명 열을 찾지 못했습니다. 첫 행에 제품명 또는 Product 헤더가 있는지 확인해 주세요.');
+        return;
+      }
+      if (!confirm(`${ships.length}건의 과거 선적 이력을 불러올까요? 체크리스트는 모두 완료 처리됩니다.`)) return;
+      db.ships.push(...ships);
+      db.countries = [...new Set([...(db.countries || []), ...ships.map(ship => ship.country).filter(Boolean)])];
+      save();
+      render();
+      alert(`${ships.length}건을 불러왔습니다.`);
+    } catch (error) {
+      alert(`엑셀 파일을 읽지 못했습니다: ${error.message}`);
+    }
+  });
+  addImportButton();
+  new MutationObserver(addImportButton).observe(document.body, { childList: true, subtree: true });
+})();

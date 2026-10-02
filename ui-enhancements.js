@@ -59,6 +59,11 @@
     });
     field.classList.toggle('number-filled', !!field.value);
   }, true);
+  document.addEventListener('change', event => {
+    if (!event.target.closest?.('.detail-modal input[data-check]')) return;
+    // The modal saves the checkbox state itself; update the card after that save.
+    setTimeout(() => render(), 0);
+  }, true);
 
   const addTaskTimingFields = () => {
     const form = document.querySelector('#taskForm');
