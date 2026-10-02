@@ -26,13 +26,20 @@
     return `${year}-${reverse[1].padStart(2, '0')}-${reverse[2].padStart(2, '0')}`;
   };
   const isNotApplicable = value => /^(x|×|n\/a|na|해당없음|없음)$/i.test(String(value || '').trim());
+  // Supports both descriptive headers and simple 1~5 / 번호1~5 columns,
+  // following the exact left-to-right order of the five front-page fields.
+  const frontNumberValue = (row, position, names) => rowValue(row, [
+    ...names,
+    String(position), `번호${position}`, `번호 ${position}`,
+    `숫자${position}`, `숫자 ${position}`, `number${position}`, `number ${position}`,
+  ]);
   const detailFields = row => {
-    const ipManagementNumber = rowValue(row, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
+    const ipManagementNumber = frontNumberValue(row, 5, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
     return {
-      '견적 생성': rowValue(row, ['견적 생성', '견적 번호', 'quotation', 'quote no']),
-      '오더 번호': rowValue(row, ['오더 번호', 'order no', 'order number']),
-      '납품 번호': rowValue(row, ['납품 번호', 'delivery no', 'delivery number']),
-      '선적 문서': rowValue(row, ['선적 문서', '선적 번호', 'shipping no', 'b/l']),
+      '견적 생성': frontNumberValue(row, 1, ['견적 생성', '견적 번호', 'quotation', 'quote no']),
+      '오더 번호': frontNumberValue(row, 2, ['오더 번호', 'order no', 'order number']),
+      '납품 번호': frontNumberValue(row, 3, ['납품 번호', 'delivery no', 'delivery number']),
+      '선적 문서': frontNumberValue(row, 4, ['선적 문서', '선적 번호', 'shipping no', 'b/l']),
       'IP 관리 번호': isNotApplicable(ipManagementNumber) ? '' : ipManagementNumber,
     };
   };
@@ -68,20 +75,21 @@
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
       const ships = rows.map(row => {
-        const product = rowValue(row, ['제품명', '제품', 'product', 'product name']);
+        const product = rowValue(row, ['제품명', '품목', '제품', 'product', 'product name']);
         if (!product) return null;
         const layout = structuredClone(db.defaults?.[product] || DEFAULT_LAYOUT);
         const done = {};
         Object.values(layout).flat().forEach(task => { done[task] = true; });
-        const country = rowValue(row, ['국가', 'country']);
+        const productDefault = db.productInfo?.[product] || db.ships.find(ship => ship.product === product) || {};
+        const country = rowValue(row, ['국가', 'country']) || productDefault.country || '';
         const advancePaymentHandling = rowValue(row, ['선입금처리', '선입금 처리', 'advance payment handling']);
-        const ipManagementNumber = rowValue(row, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
+        const ipManagementNumber = frontNumberValue(row, 5, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']);
         const ship = {
           id: uid(),
           product,
           volume: rowValue(row, ['물량', 'quantity', 'volume']),
           country,
-          port: rowValue(row, ['도착항', 'port', 'arrival port']),
+          port: rowValue(row, ['도착항', '선적항', 'port', 'arrival port']) || productDefault.port || '',
           payment: rowValue(row, ['결제 조건', '결제조건', 'payment', 'payment term']),
           advancePaymentNotRequired: isNotApplicable(advancePaymentHandling),
           insuranceNotRequired: isNotApplicable(ipManagementNumber),
