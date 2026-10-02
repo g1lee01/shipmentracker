@@ -32,6 +32,7 @@
     '선적 문서': rowValue(row, ['선적 문서', '선적 번호', 'shipping no', 'b/l']),
     'IP 관리 번호': rowValue(row, ['ip 관리 번호', 'ip 번호', '보험료', 'insurance']),
   });
+  const isNotApplicable = value => /^(x|×|n\/a|na|해당없음|없음)$/i.test(String(value || '').trim());
   const addImportButton = () => {
     const menu = document.querySelector('.shipment-menu');
     if (!menu || menu.querySelector('[data-import-history]')) return;
@@ -70,6 +71,7 @@
         const done = {};
         Object.values(layout).flat().forEach(task => { done[task] = true; });
         const country = rowValue(row, ['국가', 'country']);
+        const advancePaymentHandling = rowValue(row, ['선입금처리', '선입금 처리', 'advance payment handling']);
         const ship = {
           id: uid(),
           product,
@@ -77,6 +79,7 @@
           country,
           port: rowValue(row, ['도착항', 'port', 'arrival port']),
           payment: rowValue(row, ['결제 조건', '결제조건', 'payment', 'payment term']),
+          advancePaymentNotRequired: isNotApplicable(advancePaymentHandling),
           dispatch: dateValue(rowValue(row, ['출고일', '출고', 'dispatch', 'dispatch date'])),
           etd: dateValue(rowValue(row, ['etd', '선적일', '선적 예정일'])),
           eta: dateValue(rowValue(row, ['eta', '도착 예정일'])),
