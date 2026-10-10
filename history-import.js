@@ -8,7 +8,12 @@
   const normal = value => String(value ?? '').toLowerCase().replace(/[\s_\-./()]/g, '');
   const rowValue = (row, names) => {
     const keys = Object.keys(row);
-    const found = keys.find(key => names.some(name => normal(key) === normal(name)));
+    const found = keys.find(key => names.some(name => normal(key) === normal(name)))
+      ?? keys.find(key => names.some(name => {
+        const header = normal(key);
+        const target = normal(name);
+        return header.includes(target) || target.includes(header);
+      }));
     return found === undefined ? '' : String(row[found] ?? '').trim();
   };
   const dateValue = value => {
@@ -145,6 +150,7 @@
       // The tracker is filtered by ETD month. Move to a month containing the
       // imported history so a successful import is visible immediately.
       const latestEtd = ships.map(ship => ship.etd).filter(Boolean).sort().at(-1);
+      const datedShipments = ships.filter(ship => ship.etd).length;
       if (latestEtd) {
         month = new Date(`${latestEtd}T12:00:00`);
         const shipmentMonth = document.querySelector('#shipmentMonth');
@@ -159,7 +165,10 @@
         trackerMonth.dispatchEvent(new Event('change', { bubbles: true }));
         render();
       }
-      alert(`${ships.length}건을 불러왔습니다.${visibleShipments ? ' 해당 ETD 월로 이동했습니다.' : ' 선적 현황 전체 보기로 표시했습니다.'}`);
+      const dateNotice = datedShipments === ships.length
+        ? ''
+        : ` ETD를 읽지 못한 ${ships.length - datedShipments}건은 월별 목록에 표시되지 않습니다.`;
+      alert(`${ships.length}건을 불러왔습니다.${visibleShipments ? ' 해당 ETD 월로 이동했습니다.' : ' 선적 현황 전체 보기로 표시했습니다.'}${dateNotice}`);
     } catch (error) {
       alert(`엑셀 파일을 읽지 못했습니다: ${error.message}`);
     }
