@@ -6,7 +6,7 @@
     POST: ['입금 확인', '보험료', '결제 통지', '신호등', '운송료'],
   };
   const normal = value => String(value ?? '').toLowerCase().replace(/[\s_\-./()]/g, '');
-  const rowValue = (row, names) => {
+  const rawRowValue = (row, names) => {
     const keys = Object.keys(row);
     const found = keys.find(key => names.some(name => normal(key) === normal(name)))
       ?? keys.find(key => names.some(name => {
@@ -14,8 +14,9 @@
         const target = normal(name);
         return header.includes(target) || target.includes(header);
       }));
-    return found === undefined ? '' : String(row[found] ?? '').trim();
+    return found === undefined ? '' : row[found];
   };
+  const rowValue = (row, names) => String(rawRowValue(row, names) ?? '').trim();
   const dateValue = value => {
     if (!value) return '';
     if (value instanceof Date && !Number.isNaN(value)) return value.toISOString().slice(0, 10);
@@ -64,7 +65,7 @@
     return {
       '견적 생성': frontNumberValue(row, 1, ['견적 생성', '견적 번호', 'quotation', 'quote no']),
       '오더 번호': frontNumberValue(row, 2, ['오더 번호', 'order no', 'order number']),
-      '납품 번호': frontNumberValue(row, 3, ['납품 번호', 'delivery no', 'delivery number']),
+      '납품 번호': frontNumberValue(row, 3, ['납품 번호', '납품문서', '납품 문서', 'delivery no', 'delivery number']),
       '선적 문서': frontNumberValue(row, 4, ['선적 문서', '선적 번호', 'shipping no', 'b/l']),
       'IP 관리 번호': isNotApplicable(ipManagementNumber) ? '' : ipManagementNumber,
     };
@@ -121,9 +122,9 @@
           payment: rowValue(row, ['결제 조건', '결제조건', 'payment', 'payment term']),
           advancePaymentNotRequired: isNotApplicable(advancePaymentHandling),
           insuranceNotRequired: isNotApplicable(ipManagementNumber),
-          dispatch: dateValue(rowValue(row, ['공장출하일', '출고일', '출고', 'dispatch', 'dispatch date'])),
-          etd: dateValue(rowValue(row, ['etd', '선적일', '선적 예정일'])),
-          eta: dateValue(rowValue(row, ['eta', '도착 예정일'])),
+          dispatch: dateValue(rawRowValue(row, ['공장출하일', '출고일', '출고', 'dispatch', 'dispatch date'])),
+          etd: dateValue(rawRowValue(row, ['etd', '선적일', '선적 예정일'])),
+          eta: dateValue(rawRowValue(row, ['eta', '도착일', '도착 예정일'])),
           displayBy: rowValue(row, ['일정 표기', 'display by']) === '도착항으로 표시' ? 'port' : 'country',
           fields: detailFields(row),
           done,
