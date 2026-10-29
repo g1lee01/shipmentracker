@@ -101,6 +101,11 @@ $('#addTask').onclick=()=>taskModal();$('#addShipment').onclick=()=>{$('#shipmen
     updateActiveShipmentCount();
   };
   const monthFilter = $('#shipmentMonth');
-  if (monthFilter) monthFilter.value = '';
+  if (monthFilter) {
+    const currentMonth = new Date();
+    currentMonth.setMinutes(currentMonth.getMinutes() - currentMonth.getTimezoneOffset());
+    monthFilter.value = currentMonth.toISOString().slice(0, 7);
+    monthFilter.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   render();
 })();
