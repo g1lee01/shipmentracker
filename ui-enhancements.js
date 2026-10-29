@@ -60,8 +60,17 @@
     field.classList.toggle('number-filled', !!field.value);
   }, true);
   document.addEventListener('change', event => {
-    if (!event.target.closest?.('.detail-modal input[data-check]')) return;
-    // The modal saves the checkbox state itself; update the card after that save.
+    const checkbox = event.target.closest?.('.detail-modal input[data-check]');
+    if (!checkbox || typeof db === 'undefined') return;
+    const ship = shipForDetailDialog(checkbox.closest('.detail-modal'));
+    const taskName = checkbox.dataset.check;
+    if (!ship || !taskName) return;
+    // Save checklist state directly. This also covers user-created tasks such
+    // as 주간보고 instead of relying on the modal's later bubble listener.
+    event.stopImmediatePropagation();
+    ship.done = ship.done || {};
+    ship.done[taskName] = checkbox.checked;
+    save();
     setTimeout(() => render(), 0);
   }, true);
 
