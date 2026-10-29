@@ -88,6 +88,34 @@
     setTimeout(() => render(), 0);
   }, true);
 
+  // Calendar task checkboxes must save after the browser has applied the
+  // checked value. The legacy click handler redraws too early, which makes
+  // weekly/recurring tasks appear impossible to complete.
+  const normalizeCalendarTaskChecks = root => {
+    const scope = root?.querySelectorAll ? root : document;
+    scope.querySelectorAll('input.calendar-check[data-calendar-check]').forEach(checkbox => {
+      checkbox.classList.remove('calendar-check');
+      checkbox.classList.add('calendar-task-check');
+    });
+  };
+  normalizeCalendarTaskChecks(document);
+  new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(node => {
+      if (node.nodeType === 1) normalizeCalendarTaskChecks(node);
+    }));
+  }).observe(document.querySelector('#calendarGrid') || document.body, { childList: true, subtree: true });
+  document.addEventListener('change', event => {
+    const checkbox = event.target.closest?.('input.calendar-task-check[data-calendar-check]');
+    if (!checkbox || typeof db === 'undefined') return;
+    const task = db.tasks.find(item => item.id === checkbox.dataset.calendarCheck);
+    if (!task) return;
+    event.stopImmediatePropagation();
+    task.status = checkbox.checked ? 'done' : '';
+    save();
+    setTimeout(() => render(), 0);
+  }, true);
+  document.head.insertAdjacentHTML('beforeend', '<style>.calendar-task-check{width:11px;height:11px;margin:0;accent-color:var(--green)}</style>');
+
   const addTaskTimingFields = () => {
     const form = document.querySelector('#taskForm');
     if (!form || form.elements.time || form.elements.reminder) return;
