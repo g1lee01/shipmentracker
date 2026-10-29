@@ -25,9 +25,23 @@
   // The original listener matched every card with the same field name.
   const linkedTaskForField = { '견적 생성': '견적 번호', '오더 번호': '오더 번호', '납품 번호': '납품 번호', '선적 문서': '선적 번호', 'IP 관리 번호': '보험료' };
   const shipForDetailDialog = dialog => {
+    const shipId = dialog?.dataset.ship;
+    if (shipId) return db.ships.find(ship => ship.id === shipId);
     const heading = dialog?.querySelector('h2')?.textContent || '';
     return db.ships.find(ship => heading.startsWith(`${ship.product}${ship.volume ? ` ${ship.volume}` : ''} (${ship.port || '도착항 미정'})`));
   };
+  // The title text is not unique when several shipments have the same product,
+  // volume and port. Attach the clicked shipment ID to its checklist dialog.
+  document.addEventListener('click', event => {
+    const open = event.target.closest?.('[data-open]');
+    if (!open?.dataset.open) return;
+    const shipId = open.dataset.open;
+    queueMicrotask(() => {
+      const dialogs = [...document.querySelectorAll('.detail-modal:not([data-ship])')];
+      const dialog = dialogs.at(-1);
+      if (dialog) dialog.dataset.ship = shipId;
+    });
+  }, true);
   document.addEventListener('input', event => {
     const field = event.target.closest?.('input[data-front], input[data-link]');
     if (!field || typeof db === 'undefined') return;
