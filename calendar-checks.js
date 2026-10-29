@@ -31,6 +31,21 @@
     }).observe(grid, { childList: true, subtree: true });
   }
 
+  // Handle a real mouse/touch press before the event row can initiate drag.
+  // Rendering immediately replaces the pressed checkbox, so the later click
+  // cannot toggle the same occurrence a second time.
+  document.addEventListener('pointerdown', event => {
+    const checkbox = event.target.closest?.('input.calendar-task-check[data-calendar-check]');
+    if (!checkbox || typeof db === 'undefined') return;
+    const task = db.tasks.find(item => item.id === checkbox.dataset.calendarCheck);
+    if (!task) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    task.status = task.status === 'done' ? '' : 'done';
+    save();
+    render();
+  }, true);
+
   document.addEventListener('change', event => {
     const checkbox = event.target.closest?.('input.calendar-task-check[data-calendar-check]');
     if (!checkbox || typeof db === 'undefined') return;
