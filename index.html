@@ -6,14 +6,15 @@
   <title>선적 업무 보드</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="midnight-control.css?v=midnight-control-1">
   <style>body,button,input,select,textarea{font-family:"Noto Sans KR","Apple SD Gothic Neo",sans-serif}</style>
 </head>
 <body>
   <main>
     <header>
-      <div><p>해외영업 · 선적 관리</p><h1>선적 업무 보드</h1></div>
+      <div><p>OVERSEAS SALES · SHIPMENT CONTROL</p><h1>선적 업무 보드</h1></div>
       <div class="header-right"><span id="clock"></span></div>
     </header>
 
@@ -26,18 +27,18 @@
 
     <section class="dashboard">
       <article class="panel calendar">
-        <div class="panel-head"><div><p>일정 관리</p><h2 id="monthTitle"></h2></div><div><button id="prevMonth">‹</button><button id="nextMonth">›</button></div></div>
+        <div class="panel-head"><div><p>CALENDAR</p><h2 id="monthTitle"></h2></div><div><button id="prevMonth">‹</button><button id="nextMonth">›</button></div></div>
         <div class="week"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
         <div id="calendarGrid"></div>
       </article>
       <aside class="task-side">
-        <article class="panel"><div class="panel-head"><div><p>오늘의 업무</p><h2>오늘의 할 일</h2></div><button id="addTask">＋ 추가</button></div><div id="todayTasks" class="task-list"></div></article>
-        <article class="panel"><div class="panel-head"><div><p>예정 업무</p><h2>다가오는 할 일</h2></div></div><div id="upcomingTasks" class="task-list"></div></article>
+        <article class="panel"><div class="panel-head"><div><p>TODAY</p><h2>오늘의 할 일</h2></div><button id="addTask">＋ 추가</button></div><div id="todayTasks" class="task-list"></div></article>
+        <article class="panel"><div class="panel-head"><div><p>UPCOMING</p><h2>다가오는 할 일</h2></div></div><div id="upcomingTasks" class="task-list"></div></article>
       </aside>
     </section>
 
     <section class="shipments">
-      <div class="section-head"><div><p>선적 관리</p><h2>선적 진행 현황</h2></div><div class="shipment-tools"><select id="filter"><option value="all">전체 보기</option><option value="active">진행 중</option><option value="done">완료</option></select><button id="addShipment">＋ 새 선적건</button></div></div>
+      <div class="section-head"><div><p>SHIPMENT MANAGEMENT</p><h2>선적 진행 현황</h2></div><div class="shipment-tools"><select id="filter"><option value="all">전체 보기</option><option value="active">진행 중</option><option value="done">완료</option></select><button id="addShipment">＋ 새 선적건</button></div></div>
       <div class="tracker-label"><span>선적 정보</span><span>주요 일정</span><span>핵심 진행 항목</span><span>진행률</span></div>
       <div id="shipmentList"></div>
     </section>
@@ -99,7 +100,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="calendar-checks.js?v=repeat-delete-fix-7"></script>
   <script src="app.js?v=current-shipment-month-1"></script>
-  <script src="ui-enhancements.js?v=upcoming-three-days-1"></script>
+  <script src="ui-enhancements.js?v=midnight-control-1"></script>
   <script src="sync.js?v=import-sync-guard-1"></script>
   <script src="history-import.js?v=history-import-11"></script>
   <style>

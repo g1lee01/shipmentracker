@@ -9,6 +9,52 @@
     return now.toISOString().slice(0, 10);
   };
 
+  const activateMidnightControl = () => {
+    const migrationKey = 'shipment-midnight-control-v1';
+    if (!localStorage.getItem(migrationKey) && typeof db !== 'undefined') {
+      db.theme = 'midnight';
+      if (typeof save === 'function') save();
+      localStorage.setItem(migrationKey, '1');
+    }
+    document.body.dataset.theme = typeof db !== 'undefined' ? (db.theme || 'midnight') : 'midnight';
+  };
+
+  const setupMidnightKpis = () => {
+    const summary = document.querySelector('.summary');
+    if (!summary || summary.classList.contains('midnight-kpis')) return;
+    const value = id => document.querySelector(id)?.textContent || '0';
+    const values = {
+      active: value('#activeCount'),
+      today: value('#todayCount'),
+      dispatch: value('#dispatchCount'),
+      etd: value('#etdCount')
+    };
+    summary.classList.add('midnight-kpis');
+    summary.innerHTML = `
+      <article><span>진행 중 선적</span><b id="activeCount">${values.active}</b><small>현재 처리 중인 건</small></article>
+      <article><span>오늘의 할 일</span><b id="todayCount">${values.today}</b><small>오늘 마감 기준</small></article>
+      <article><span>이번 주 출고</span><b id="dispatchCount">${values.dispatch}</b><small>공장 출고 예정</small></article>
+      <article><span>이번 주 ETD</span><b id="etdCount">${values.etd}</b><small>선적 예정</small></article>
+      <article><span>입금 대기</span><b id="paymentPendingCount">0건</b><div class="payment-pending-list"></div></article>`;
+  };
+
+  const addMidnightThemeOption = () => {
+    const options = document.querySelector('.theme-options');
+    if (!options || options.querySelector('[data-theme="midnight"]')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.theme = 'midnight';
+    button.textContent = 'Midnight';
+    options.append(button);
+  };
+
+  document.addEventListener('click', event => {
+    if (event.target.closest?.('.settings-button')) setTimeout(addMidnightThemeOption, 0);
+  });
+
+  activateMidnightControl();
+  setupMidnightKpis();
+
   const addShipmentDisplayField = () => {
     const form = document.querySelector('#shipmentForm');
     if (!form || form.elements.displayBy) return;
