@@ -1,6 +1,16 @@
 /* Calendar completion is isolated from the rest of the UI enhancements so
    recurring tasks can always be checked one occurrence at a time. */
 (() => {
+  // The repeat-deletion dialog uses empty data attributes, while its original
+  // click handler checks for truthy values. Make them truthy before that
+  // handler runs so both deletion choices work.
+  document.addEventListener('click', event => {
+    const one = event.target.closest?.('[data-one]');
+    const future = event.target.closest?.('[data-future]');
+    if (one && !one.dataset.one) one.dataset.one = '1';
+    if (future && !future.dataset.future) future.dataset.future = '1';
+  }, true);
+
   const normalize = root => {
     if (!root || root.nodeType !== 1) return;
     const checkboxes = [];
