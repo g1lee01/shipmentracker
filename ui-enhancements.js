@@ -134,7 +134,7 @@
     form?.querySelectorAll('[data-color-value]').forEach(chip => chip.classList.toggle('selected', chip.dataset.colorValue === selected));
   };
   arrangeTaskFields();
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="repeat"]){grid-column:1!important;min-width:0}#taskForm label:has([name="reminder"]),#taskForm label:has([name="status"]){grid-column:2!important;min-width:0}#taskForm label:has([name="color"]){display:none!important}#taskForm{position:relative}.task-color-swatches{position:absolute;top:3px;right:22px;display:flex;gap:5px;align-items:center}.task-color-swatches button{width:13px;height:13px;min-width:13px;padding:0;border:1px solid #d2dbd6;border-radius:50%;box-shadow:none}.task-color-swatches button.selected{outline:2px solid var(--green);outline-offset:2px}.task-color-swatches button[data-color-value="white"]{border-color:#aeb9b3}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}.reminder-toast button{position:absolute;right:8px;top:7px;border:0;background:transparent;color:var(--muted);font-size:17px;padding:1px 5px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskForm label:has([name="time"]),#taskForm label:has([name="repeat"]){grid-column:1!important;min-width:0}#taskForm label:has([name="reminder"]),#taskForm label:has([name="status"]){grid-column:2!important;min-width:0}#taskForm label:has([name="color"]){display:none!important}#taskForm{position:relative}.task-color-swatches{position:absolute;top:3px;right:22px;display:flex;gap:5px;align-items:center}.task-color-swatches button{width:13px;height:13px;min-width:13px;padding:0;border:1px solid #d2dbd6;border-radius:50%;box-shadow:none}.task-color-swatches button.selected{outline:2px solid var(--green);outline-offset:2px}.task-color-swatches button[data-color-value="white"]{border-color:#aeb9b3}.task select[data-status]{display:none!important}.reminder-toast{position:fixed;right:22px;bottom:22px;z-index:80;width:min(330px,calc(100vw - 34px));padding:14px 16px;border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;background:var(--card);box-shadow:0 12px 36px #172a2430;animation:reminder-in .22s ease-out}.reminder-toast strong,.reminder-toast small{display:block}.reminder-toast strong{font-size:13px;margin-bottom:4px}.reminder-toast small{color:var(--muted);font-size:11px}.reminder-toast button{position:absolute;right:8px;top:7px;border:0;background:transparent;color:var(--muted);font-size:17px;padding:1px 5px}@keyframes reminder-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}</style>');
 
   const localDateForCalendar = date => {
     const copy = new Date(date);
@@ -292,6 +292,14 @@
     });
     sessionStorage.setItem(reminderSeenKey, JSON.stringify([...seen]));
   };
+  const renderThreeDayUpcomingTasks = () => {
+    if (typeof db === 'undefined' || typeof tasks !== 'function') return;
+    const today = todayForInput();
+    const end = new Date(`${today}T00:00:00`);
+    end.setDate(end.getDate() + 3);
+    const endDate = localDateForCalendar(end);
+    tasks('#upcomingTasks', db.tasks.filter(task => task.date > today && task.date <= endDate && !task.status));
+  };
 
   if (typeof render === 'function') {
     const originalRender = render;
@@ -300,11 +308,13 @@
       relabelShipmentItems();
       showTaskTimes();
       renderPendingPaymentCard();
+      renderThreeDayUpcomingTasks();
     };
   }
   relabelShipmentItems();
   showTaskTimes();
   renderPendingPaymentCard();
+  renderThreeDayUpcomingTasks();
   setInterval(renderPendingPaymentCard, 500);
   setInterval(checkReminders, 30000);
   setInterval(updateColorChips, 250);
