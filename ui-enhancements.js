@@ -9,6 +9,19 @@
     return now.toISOString().slice(0, 10);
   };
 
+  const separateWeeklyKpiCards = () => {
+    const split = document.querySelector('.summary article.split');
+    if (!split) return;
+    const cards = [...split.children].map(section => {
+      const card = document.createElement('article');
+      card.innerHTML = section.innerHTML;
+      return card;
+    });
+    split.replaceWith(...cards);
+  };
+
+  separateWeeklyKpiCards();
+
   const addShipmentDisplayField = () => {
     const form = document.querySelector('#shipmentForm');
     if (!form || form.elements.displayBy) return;
