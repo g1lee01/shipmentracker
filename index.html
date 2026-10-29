@@ -103,6 +103,9 @@
   <script src="sync.js?v=import-sync-guard-1"></script>
   <script src="history-import.js?v=history-import-11"></script>
   <style>
+    @media (min-width: 1100px) {
+      .summary { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+    }
     .key-tasks label { font-size: 13px !important; }
     .key-tasks input { font-size: 12px !important; }
     .key-tasks { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)) 22px !important; gap: 10px !important; align-items: start !important; }
