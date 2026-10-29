@@ -9,6 +9,17 @@
     checkboxes.forEach(box => {
       box.classList.remove('calendar-check');
       box.classList.add('calendar-task-check');
+      // A draggable parent can swallow checkbox clicks in Chromium/Safari.
+      // Keep the checkbox clickable and use the task text as the drag handle.
+      const event = box.closest('.event[data-drag^="task:"]');
+      if (event) {
+        event.draggable = false;
+        const dragHandle = event.querySelector('span');
+        if (dragHandle) {
+          dragHandle.draggable = true;
+          dragHandle.title = '드래그하여 날짜 이동';
+        }
+      }
     });
   };
 
