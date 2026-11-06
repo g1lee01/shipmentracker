@@ -119,24 +119,19 @@
     });
     field.classList.toggle('number-filled', !!field.value);
   }, true);
-  // Own the click from beginning to end. This avoids both the draggable-row
-  // browser bug and stale modal object references after cloud state reloads.
-  document.addEventListener('click', event => {
+  // Rows are no longer draggable around the checkbox, so let the browser own
+  // the native check interaction and persist its final value on change.
+  document.addEventListener('change', event => {
     const checkbox = event.target.closest?.('.detail-modal input[data-check]');
     if (!checkbox || typeof db === 'undefined') return;
     const dialog = checkbox.closest('.detail-modal');
     const ship = shipForDetailDialog(dialog);
     const taskName = checkbox.dataset.check;
     if (!ship || !taskName) return;
-    event.preventDefault();
     event.stopImmediatePropagation();
     ship.done = ship.done || {};
-    const checked = !Boolean(ship.done[taskName]);
-    ship.done[taskName] = checked;
+    ship.done[taskName] = checkbox.checked;
     save();
-    // A cancelled checkbox click restores the pre-click visual value after the
-    // event. Apply the saved value once that browser rollback has completed.
-    queueMicrotask(() => { checkbox.checked = checked; });
   }, true);
 
   const addTaskTimingFields = () => {
