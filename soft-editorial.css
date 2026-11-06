@@ -105,10 +105,17 @@ body:not([data-theme="black"]) .summary article .weekly-shipment-list,
 body:not([data-theme="black"]) .payment-pending-list {
   display: grid;
   min-width: 0;
-  max-height: 30px;
   margin-top: auto !important;
   overflow: hidden;
   gap: 2px;
+}
+
+body:not([data-theme="black"]) .summary article .weekly-shipment-list {
+  max-height: 30px;
+}
+
+body:not([data-theme="black"]) .payment-pending-list {
+  max-height: 46px;
 }
 
 body:not([data-theme="black"]) .summary article .weekly-shipment-list small,
