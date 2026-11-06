@@ -1,7 +1,7 @@
 /* Core interface enhancements. Kept independent from cloud sync so they work
    even if the Supabase CDN is temporarily unavailable. */
 (() => {
-  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}#calendarGrid,.week{grid-template-columns:.9fr repeat(5,minmax(0,1fr)) .9fr!important}#calendarGrid .day.month-end:not(.business-close):after{content:none!important}#calendarGrid .day.month-end:not(.business-close):not(.holiday):not(.vacation-day){background:var(--card)!important}.payment-pending-list{display:grid;gap:3px;margin-top:2px}.payment-pending-list small{color:var(--muted);font-size:9px;line-height:1.35}.key-tasks label{font-size:12px!important}.key-tasks input{font-size:11px!important}</style>');
+  document.head.insertAdjacentHTML('beforeend', '<style>#taskDialog{position:relative}#taskDialog .close{position:absolute;top:18px;left:50%;transform:translateX(-50%);float:none;z-index:1}#calendarGrid,.week{grid-template-columns:.9fr repeat(5,minmax(0,1fr)) .9fr!important}#calendarGrid .day.month-end:not(.business-close):after{content:none!important}#calendarGrid .day.month-end:not(.business-close):not(.holiday):not(.vacation-day){background:var(--card)!important}.payment-pending-list{display:grid;gap:3px;margin-top:2px}.payment-pending-list small{color:var(--muted);font-size:9px;line-height:1.35}.key-tasks label{font-size:12px!important}.key-tasks input{font-size:11px!important}.detail-modal input[data-check][hidden]{display:none!important}.checklist-toggle{position:relative!important;flex:0 0 17px!important;width:17px!important;height:17px!important;min-width:17px!important;padding:0!important;border:1px solid #7d817f!important;border-radius:3px!important;background:#fff!important;box-shadow:none!important;cursor:pointer!important}.checklist-toggle[aria-checked="true"]{border-color:#76ad98!important;background:#8fc5b2!important}.checklist-toggle[aria-checked="true"]:after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:800;line-height:1}</style>');
 
   const todayForInput = () => {
     const now = new Date();
@@ -77,6 +77,18 @@
       }
       dialog.querySelectorAll('.work-row').forEach(row => {
         row.draggable = false;
+        const checkbox = row.querySelector('input[data-check]');
+        if (checkbox && !row.querySelector('.checklist-toggle')) {
+          checkbox.hidden = true;
+          const toggle = document.createElement('button');
+          toggle.type = 'button';
+          toggle.className = 'checklist-toggle';
+          toggle.dataset.checkToggle = checkbox.dataset.check;
+          toggle.setAttribute('role', 'checkbox');
+          toggle.setAttribute('aria-label', `${checkbox.dataset.check} 완료`);
+          toggle.setAttribute('aria-checked', checkbox.checked ? 'true' : 'false');
+          checkbox.before(toggle);
+        }
         const handle = row.querySelector('[data-title]');
         if (handle) {
           handle.draggable = true;
@@ -88,6 +100,24 @@
   new MutationObserver(records => {
     records.forEach(record => record.addedNodes.forEach(normalizeDetailChecklist));
   }).observe(document.body, { childList: true, subtree: true });
+
+  document.addEventListener('click', event => {
+    const toggle = event.target.closest?.('.detail-modal .checklist-toggle');
+    if (!toggle || typeof db === 'undefined') return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const dialog = toggle.closest('.detail-modal');
+    const ship = shipForDetailDialog(dialog);
+    const taskName = toggle.dataset.checkToggle;
+    if (!ship || !taskName) return;
+    ship.done = ship.done || {};
+    const checked = !Boolean(ship.done[taskName]);
+    ship.done[taskName] = checked;
+    toggle.setAttribute('aria-checked', checked ? 'true' : 'false');
+    const checkbox = toggle.parentElement.querySelector('input[data-check]');
+    if (checkbox) checkbox.checked = checked;
+    save();
+  }, true);
   document.addEventListener('input', event => {
     const field = event.target.closest?.('input[data-front], input[data-link]');
     if (!field || typeof db === 'undefined') return;
