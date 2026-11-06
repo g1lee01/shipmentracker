@@ -121,11 +121,23 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     if (error) showMessage(`동기화 오류: ${error.message}`, true);
   };
 
-  const schedulePush = () => {
+  const schedulePush = (delay = 700) => {
     if (!currentUser || loadingCloudState) return;
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(pushState, 700);
+    saveTimer = setTimeout(pushState, delay);
   };
+
+  // Checklist dialogs save locally on every click. Expose a small, scoped
+  // flush hook so closing the dialog also uploads the latest state immediately
+  // instead of leaving it in the normal debounce window.
+  window.scheduleShippingStatePush = delay => schedulePush(delay);
+  window.flushShippingState = async () => {
+    clearTimeout(saveTimer);
+    await pushState();
+  };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') window.flushShippingState();
+  });
 
   const loadState = async () => {
     const { data, error } = await cloud

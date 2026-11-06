@@ -95,11 +95,26 @@
           handle.title = '드래그하여 순서 이동';
         }
       });
+      if (!dialog.dataset.autosaveBound) {
+        dialog.dataset.autosaveBound = 'true';
+        dialog.addEventListener('close', () => {
+          save();
+          window.flushShippingState?.();
+        });
+      }
     });
   };
   new MutationObserver(records => {
     records.forEach(record => record.addedNodes.forEach(normalizeDetailChecklist));
   }).observe(document.body, { childList: true, subtree: true });
+
+  // The original dialog removes itself as soon as its close event fires. Flush
+  // before that happens so a user can check items and immediately press X.
+  document.addEventListener('click', event => {
+    if (!event.target.closest?.('.detail-modal .close')) return;
+    save();
+    window.flushShippingState?.();
+  }, true);
 
   document.addEventListener('click', event => {
     const toggle = event.target.closest?.('.detail-modal .checklist-toggle');
@@ -117,6 +132,7 @@
     const checkbox = toggle.parentElement.querySelector('input[data-check]');
     if (checkbox) checkbox.checked = checked;
     save();
+    window.scheduleShippingStatePush?.(100);
   }, true);
   document.addEventListener('input', event => {
     const field = event.target.closest?.('input[data-front], input[data-link]');
