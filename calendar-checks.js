@@ -41,11 +41,20 @@
     }).observe(grid, { childList: true, subtree: true });
   }
 
-  // Handle a real mouse/touch press before the event row can initiate drag.
-  // Rendering immediately replaces the pressed checkbox, so the later click
-  // cannot toggle the same occurrence a second time.
+  // Keep the press away from the draggable event row. Completion itself is
+  // handled by the click listener below so a re-render between pointerdown and
+  // click cannot toggle a recurring occurrence twice.
   document.addEventListener('pointerdown', event => {
     const checkbox = event.target.closest?.('input.calendar-task-check[data-calendar-check]');
+    if (!checkbox) return;
+    event.stopImmediatePropagation();
+  }, true);
+
+  // This script loads before app.js, so the window capture listener runs before
+  // the older generic calendar handler. It updates exactly one saved task,
+  // including one generated occurrence in a repeat group.
+  window.addEventListener('click', event => {
+    const checkbox = event.target.closest?.('input[data-calendar-check]');
     if (!checkbox || typeof db === 'undefined') return;
     const task = db.tasks.find(item => item.id === checkbox.dataset.calendarCheck);
     if (!task) return;
