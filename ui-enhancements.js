@@ -45,16 +45,49 @@
   };
   // The title text is not unique when several shipments have the same product,
   // volume and port. Attach the clicked shipment ID to its checklist dialog.
+  let pendingDetailShipId = '';
   document.addEventListener('click', event => {
     const open = event.target.closest?.('[data-open]');
     if (!open?.dataset.open) return;
     const shipId = open.dataset.open;
+    pendingDetailShipId = shipId;
     queueMicrotask(() => {
       const dialogs = [...document.querySelectorAll('.detail-modal:not([data-ship])')];
       const dialog = dialogs.at(-1);
-      if (dialog) dialog.dataset.ship = shipId;
+      if (dialog) {
+        dialog.dataset.ship = shipId;
+        normalizeDetailChecklist(dialog);
+      }
+      pendingDetailShipId = '';
     });
   }, true);
+
+  // Checklist rows used to be draggable as a whole. Chromium and Safari can
+  // interpret a checkbox press as a drag in that setup, so the native check is
+  // immediately cancelled. Use the task title as the drag handle instead.
+  const normalizeDetailChecklist = root => {
+    const dialogs = [];
+    if (root?.matches?.('.detail-modal')) dialogs.push(root);
+    root?.querySelectorAll?.('.detail-modal').forEach(dialog => dialogs.push(dialog));
+    dialogs.forEach(dialog => {
+      if (!dialog.dataset.ship) {
+        const ship = (pendingDetailShipId && db.ships.find(item => item.id === pendingDetailShipId))
+          || shipForDetailDialog(dialog);
+        if (ship) dialog.dataset.ship = ship.id;
+      }
+      dialog.querySelectorAll('.work-row').forEach(row => {
+        row.draggable = false;
+        const handle = row.querySelector('[data-title]');
+        if (handle) {
+          handle.draggable = true;
+          handle.title = '드래그하여 순서 이동';
+        }
+      });
+    });
+  };
+  new MutationObserver(records => {
+    records.forEach(record => record.addedNodes.forEach(normalizeDetailChecklist));
+  }).observe(document.body, { childList: true, subtree: true });
   document.addEventListener('input', event => {
     const field = event.target.closest?.('input[data-front], input[data-link]');
     if (!field || typeof db === 'undefined') return;
@@ -86,19 +119,24 @@
     });
     field.classList.toggle('number-filled', !!field.value);
   }, true);
-  document.addEventListener('change', event => {
+  // Own the click from beginning to end. This avoids both the draggable-row
+  // browser bug and stale modal object references after cloud state reloads.
+  document.addEventListener('click', event => {
     const checkbox = event.target.closest?.('.detail-modal input[data-check]');
     if (!checkbox || typeof db === 'undefined') return;
-    const ship = shipForDetailDialog(checkbox.closest('.detail-modal'));
+    const dialog = checkbox.closest('.detail-modal');
+    const ship = shipForDetailDialog(dialog);
     const taskName = checkbox.dataset.check;
     if (!ship || !taskName) return;
-    // Save checklist state directly. This also covers user-created tasks such
-    // as 주간보고 instead of relying on the modal's later bubble listener.
+    event.preventDefault();
     event.stopImmediatePropagation();
     ship.done = ship.done || {};
-    ship.done[taskName] = checkbox.checked;
+    const checked = !Boolean(ship.done[taskName]);
+    ship.done[taskName] = checked;
     save();
-    setTimeout(() => render(), 0);
+    // A cancelled checkbox click restores the pre-click visual value after the
+    // event. Apply the saved value once that browser rollback has completed.
+    queueMicrotask(() => { checkbox.checked = checked; });
   }, true);
 
   const addTaskTimingFields = () => {
