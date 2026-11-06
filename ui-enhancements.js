@@ -98,8 +98,17 @@
       if (!dialog.dataset.autosaveBound) {
         dialog.dataset.autosaveBound = 'true';
         dialog.addEventListener('close', () => {
+          if (dialog.dataset.saveClosing) return;
           save();
           window.flushShippingState?.();
+        });
+        dialog.addEventListener('cancel', async event => {
+          event.preventDefault();
+          if (dialog.dataset.saveClosing) return;
+          dialog.dataset.saveClosing = 'true';
+          save();
+          await window.flushShippingState?.();
+          dialog.close();
         });
       }
     });
@@ -110,10 +119,19 @@
 
   // The original dialog removes itself as soon as its close event fires. Flush
   // before that happens so a user can check items and immediately press X.
-  document.addEventListener('click', event => {
-    if (!event.target.closest?.('.detail-modal .close')) return;
+  document.addEventListener('click', async event => {
+    const close = event.target.closest?.('.detail-modal .close');
+    if (!close) return;
+    const dialog = close.closest('.detail-modal');
+    if (!dialog || dialog.dataset.saveClosing) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    dialog.dataset.saveClosing = 'true';
+    close.disabled = true;
+    close.textContent = '…';
     save();
-    window.flushShippingState?.();
+    await window.flushShippingState?.();
+    dialog.close();
   }, true);
 
   document.addEventListener('click', event => {

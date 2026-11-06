@@ -110,15 +110,30 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zrYtf7dZIrkVaFNYQeN0RQ_PHaFSm5Z
     }
   };
 
-  const pushState = async () => {
-    if (!currentUser || loadingCloudState) return;
-    await migrateLocalPhoto();
-    const { error } = await cloud.from(STATE_TABLE).upsert({
-      user_id: currentUser.id,
-      payload: cleanStateForCloud(),
-      updated_at: new Date().toISOString(),
-    });
-    if (error) showMessage(`동기화 오류: ${error.message}`, true);
+  let pushPromise = null;
+  let pushAgain = false;
+  const pushState = () => {
+    if (!currentUser || loadingCloudState) return Promise.resolve();
+    // Never let older requests finish after a newer checklist save and replace
+    // it. Concurrent calls are coalesced, then the newest full state is written
+    // once more before this promise resolves.
+    if (pushPromise) {
+      pushAgain = true;
+      return pushPromise;
+    }
+    pushPromise = (async () => {
+      do {
+        pushAgain = false;
+        await migrateLocalPhoto();
+        const { error } = await cloud.from(STATE_TABLE).upsert({
+          user_id: currentUser.id,
+          payload: cleanStateForCloud(),
+          updated_at: new Date().toISOString(),
+        });
+        if (error) showMessage(`동기화 오류: ${error.message}`, true);
+      } while (pushAgain);
+    })().finally(() => { pushPromise = null; });
+    return pushPromise;
   };
 
   const schedulePush = (delay = 700) => {
