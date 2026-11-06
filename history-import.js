@@ -19,7 +19,9 @@
   const rowValue = (row, names) => String(rawRowValue(row, names) ?? '').trim();
   const dateValue = value => {
     if (!value) return '';
-    if (value instanceof Date && !Number.isNaN(value)) return value.toISOString().slice(0, 10);
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    }
     if (typeof value === 'number' && window.XLSX?.SSF) {
       const date = XLSX.SSF.parse_date_code(value);
       if (date) return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;

@@ -235,7 +235,7 @@
     const list = document.querySelector('.payment-pending-list');
     if (!count || !list || typeof db === 'undefined') return;
     const activeMonth = typeof month === 'undefined'
-      ? new Date().toISOString().slice(0, 7)
+      ? todayForInput().slice(0, 7)
       : `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
     const pending = db.ships
       .filter(ship => ship.payment && !ship.done?.['입금 확인'] && paymentDate(ship).startsWith(activeMonth))
